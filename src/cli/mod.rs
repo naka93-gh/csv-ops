@@ -7,6 +7,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 
 pub(crate) mod mask;
+pub(crate) mod replace;
 
 /// csv-ops のトップレベル CLI
 #[derive(Parser, Debug)]
@@ -21,12 +22,15 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// 指定カラムを文字数保持でマスクする
     Mask(mask::MaskArgs),
+    /// 全カラム全セルを横断的に置換する
+    Replace(replace::ReplaceArgs),
 }
 
 impl Cli {
     pub fn dispatch(self) -> Result<ExitCode, Box<dyn Error>> {
         match self.command {
             Command::Mask(args) => mask::run(args),
+            Command::Replace(args) => replace::run(args),
         }
     }
 }

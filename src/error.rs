@@ -36,6 +36,9 @@ impl From<csv::Error> for CsvOpsError {
 pub enum EncodingError {
     #[error("未対応のエンコーディング: {0} (対応: utf-8 / shift_jis / euc-jp)")]
     Unsupported(String),
+
+    #[error("{encoding} でエンコードできない文字が含まれています")]
+    EncodeFailure { encoding: String },
 }
 
 /// 設定ファイル関連エラー
@@ -43,6 +46,18 @@ pub enum EncodingError {
 pub enum ConfigError {
     #[error("TOML パースエラー: {0}")]
     Parse(#[from] toml::de::Error),
+
+    #[error("設定ファイルに version フィールドがありません")]
+    VersionMissing,
+
+    #[error("未対応の設定バージョン: {found} (対応バージョン: {supported})")]
+    UnsupportedVersion { found: u32, supported: u32 },
+
+    #[error("設定が不正です: {0}")]
+    Validation(String),
+
+    #[error("ルール衝突 ({reason}): {}", rules.join(", "))]
+    RuleCollision { rules: Vec<String>, reason: String },
 }
 
 /// 変換実行時エラー

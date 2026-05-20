@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use csv_ops::{
-    CharFill, ColumnSpec, CsvOpsError, EncodingError, MaskOptions, MaskStrategy, TransformError,
+    CharFill, ColumnRef, CsvOpsError, EncodingError, MaskOptions, MaskStrategy, TransformError,
     mask_csv, resolve_encoding,
 };
 use encoding_rs_io::DecodeReaderBytesBuilder;
@@ -14,7 +14,7 @@ use encoding_rs_io::DecodeReaderBytesBuilder;
 #[test]
 fn masks_target_columns_only() {
     let input = "header1,header2,header3\nfoo,bar,baz\nhello,world,!\n";
-    let columns = [ColumnSpec::Name("header2".to_string())];
+    let columns = [ColumnRef::Name("header2".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     mask_csv(
@@ -39,7 +39,7 @@ fn masks_target_columns_only() {
 #[test]
 fn returns_error_for_unknown_column() {
     let input = "a,b\n1,2\n";
-    let columns = [ColumnSpec::Name("nope".to_string())];
+    let columns = [ColumnRef::Name("nope".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -63,7 +63,7 @@ fn returns_error_for_unknown_column() {
 #[test]
 fn unknown_column_error_lists_available_columns() {
     let input = "header1,header2,header3\n1,2,3\n";
-    let columns = [ColumnSpec::Name("nope".to_string())];
+    let columns = [ColumnRef::Name("nope".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -89,7 +89,7 @@ fn unknown_column_error_lists_available_columns() {
 #[test]
 fn csv_error_carries_line_number() {
     let input = "a,b,c\n1,2\n";
-    let columns = [ColumnSpec::Name("a".to_string())];
+    let columns = [ColumnRef::Name("a".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -115,7 +115,7 @@ fn csv_error_carries_line_number() {
 #[test]
 fn handles_tab_delimiter() {
     let input = "a\tb\n1\t2\n";
-    let columns = [ColumnSpec::Name("b".to_string())];
+    let columns = [ColumnRef::Name("b".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     mask_csv(
@@ -136,7 +136,7 @@ fn handles_tab_delimiter() {
 #[test]
 fn masks_by_index_with_headers() {
     let input = "a,b,c\nfoo,bar,baz\n";
-    let columns = [ColumnSpec::Index(1)];
+    let columns = [ColumnRef::Index(1)];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     mask_csv(
@@ -157,7 +157,7 @@ fn masks_by_index_with_headers() {
 #[test]
 fn masks_by_index_without_headers() {
     let input = "foo,bar,baz\nhello,world,!\n";
-    let columns = [ColumnSpec::Index(0)];
+    let columns = [ColumnRef::Index(0)];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     mask_csv(
@@ -181,7 +181,7 @@ fn masks_by_index_without_headers() {
 #[test]
 fn name_spec_errors_without_headers() {
     let input = "1,2,3\n";
-    let columns = [ColumnSpec::Name("a".to_string())];
+    let columns = [ColumnRef::Name("a".to_string())];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -205,7 +205,7 @@ fn name_spec_errors_without_headers() {
 #[test]
 fn out_of_range_index_errors_with_headers() {
     let input = "a,b\n1,2\n";
-    let columns = [ColumnSpec::Index(5)];
+    let columns = [ColumnRef::Index(5)];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -232,7 +232,7 @@ fn out_of_range_index_errors_with_headers() {
 #[test]
 fn out_of_range_index_errors_without_headers() {
     let input = "1,2\n";
-    let columns = [ColumnSpec::Index(5)];
+    let columns = [ColumnRef::Index(5)];
     let strategy = CharFill { ch: '*' };
     let mut output = Vec::new();
     let err = mask_csv(
@@ -365,7 +365,7 @@ mod encoding_tests {
             .encoding(Some(encoding))
             .build(Cursor::new(input));
 
-        let columns = [ColumnSpec::Name("b".to_string())];
+        let columns = [ColumnRef::Name("b".to_string())];
         let strategy = CharFill { ch: '*' };
         let mut output = Vec::new();
         mask_csv(

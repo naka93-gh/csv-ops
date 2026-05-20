@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::column::ColumnRef;
+
 /// 設定ファイル全体に対応する型
 /// #[derive(Deserialize)] で toml クレートが TOML → 構造体への変換を自動生成する
 #[derive(Debug, Deserialize)]
@@ -12,7 +14,7 @@ pub struct MaskConfig {
 #[derive(Debug, Deserialize)]
 pub struct Target {
     pub filepath: String,
-    pub columns: Vec<ColumnSpec>,
+    pub columns: Vec<ColumnRef>,
     // デリミター
     #[serde(default = "default_delimiter")]
     pub delimiter: String,
@@ -22,16 +24,6 @@ pub struct Target {
     // 入力ファイルのエンコーディング
     #[serde(default = "default_encoding")]
     pub encoding: String,
-}
-
-/// マスク対象カラムの指定方法
-/// serde untagged により TOML 側は文字列でも数値でも書け、混在も可
-/// 例: columns = ["name", 5]
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum ColumnSpec {
-    Name(String),
-    Index(usize),
 }
 
 /// delimiter のデフォルト値

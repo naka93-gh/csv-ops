@@ -15,6 +15,25 @@ pub(crate) struct ReplaceTransform {
     case_insensitive: bool,
 }
 
+/// 置換対象の列
+/// run 側で ColumnRef を解決済みインデックスに変換してから渡す
+pub(crate) enum TargetColumns {
+    /// 全カラム横断 (--all-columns)
+    All,
+    /// 解決済みの対象列インデックス (-c 指定)
+    Indices(Vec<usize>),
+}
+
+impl TargetColumns {
+    /// col_index が置換対象かどうか
+    fn includes(&self, col_index: usize) -> bool {
+        match self {
+            TargetColumns::All => true,
+            TargetColumns::Indices(idx) => idx.contains(&col_index),
+        }
+    }
+}
+
 impl ReplaceTransform {
     /// コンストラクタ
     /// Config パース / CLI 引数いずれの経路でも、最終的にここで組み立てる
@@ -26,17 +45,38 @@ impl ReplaceTransform {
     }
 
     /// レコード単位の置換処理
+    /// target で対象列を絞る (All なら全列、Indices なら指定列のみ)
     pub fn apply_record(
         &self,
         record: &mut StringRecord,
         row: u64,
         headers: Option<&StringRecord>,
+        target: &TargetColumns,
     ) -> Result<bool, TransformError> {
+        // ヘッダー無し + 列番号指定の場合、解決時に範囲チェックできないため
+        // データ行のカラム数に対してここで検証する
+        if let TargetColumns::Indices(idx) = target {
+            for &i in idx {
+                if i >= record.len() {
+                    return Err(TransformError::IndexOutOfRange {
+                        index: i,
+                        columns: record.len(),
+                    });
+                }
+            }
+        }
+
         // cell ごとに置換処理
         // csv::StringRecord は cell 単位の差し替えができないので cell ごとに処理して最後に record を差し替える形をとる
         let mut any_modified = false;
         let mut new_fields: Vec<String> = Vec::with_capacity(record.len());
         for (col_index, field) in record.iter().enumerate() {
+            // 対象列でなければ置換せず元の値をそのまま残す
+            if !target.includes(col_index) {
+                new_fields.push(field.to_string());
+                continue;
+            }
+
             // カラム名取得
             // ヘッダーがあればヘッダー文字列、なければ列番号を使う
             let column_name = headers

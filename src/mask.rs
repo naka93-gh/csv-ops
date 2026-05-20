@@ -4,14 +4,14 @@
 
 use std::io::{Read, Write};
 
-use crate::config::ColumnSpec;
+use crate::column::ColumnRef;
 use crate::error::{CsvOpsError, TransformError};
 use crate::strategy::MaskStrategy;
 
 /// mask_csv に渡すマスキング設定一式
 pub struct MaskOptions<'a> {
     // マスク対象カラム (Name と Index の混在可)
-    pub columns: &'a [ColumnSpec],
+    pub columns: &'a [ColumnRef],
     // 区切り文字 (csv crate の API に合わせて u8 で持つ)
     pub delimiter: u8,
     // マスク戦略
@@ -38,20 +38,20 @@ pub fn mask_csv<R: Read, W: Write>(
         .from_writer(writer);
 
     // ヘッダ取得 (ヘッダ無しなら None)
-    // ColumnSpec::Name の解決と Index の事前範囲チェックに使う
+    // ColumnRef::Name の解決と Index の事前範囲チェックに使う
     let headers: Option<csv::StringRecord> = if options.has_headers {
         Some(rdr.headers()?.clone())
     } else {
         None
     };
 
-    // ColumnSpec をマスク対象 indices に解決
+    // ColumnRef をマスク対象 indices に解決
     // - Name: ヘッダ有りでヘッダ内位置を引く。ヘッダ無しなら NameWithoutHeaders
     // - Index: ヘッダ有り時はヘッダ長で範囲チェック。ヘッダ無し時は各データ行で後段チェック
     let mut indices: Vec<usize> = Vec::with_capacity(options.columns.len());
     for col in options.columns {
         match col {
-            ColumnSpec::Name(name) => match &headers {
+            ColumnRef::Name(name) => match &headers {
                 Some(h) => match h.iter().position(|c| c == name) {
                     Some(i) => indices.push(i),
                     None => {
@@ -64,7 +64,7 @@ pub fn mask_csv<R: Read, W: Write>(
                 },
                 None => return Err(TransformError::NameWithoutHeaders(name.clone()).into()),
             },
-            ColumnSpec::Index(i) => {
+            ColumnRef::Index(i) => {
                 // let-chain で「ヘッダ有り かつ 範囲外」を 1 段の if にまとめる
                 if let Some(h) = &headers
                     && *i >= h.len()
