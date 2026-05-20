@@ -88,4 +88,7 @@ pub enum TransformError {
         column: String,
         rules: Vec<String>,
     },
+
+    #[error("出力カラム名 {name} は既存カラムまたは他ルールと衝突しています")]
+    OutputColumnConflict { name: String },
 }

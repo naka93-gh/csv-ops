@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+pub(crate) mod flag;
 pub(crate) mod mask;
 pub(crate) mod replace;
 
@@ -27,6 +28,8 @@ pub(crate) enum Command {
     Mask(mask::MaskArgs),
     /// 指定カラムを文字置換する (全カラムオプションあり)
     Replace(replace::ReplaceArgs),
+    /// 指定カラムをパターン判定して真偽値の列を追加する
+    Flag(flag::FlagArgs),
 }
 
 impl Cli {
@@ -34,6 +37,7 @@ impl Cli {
         match self.command {
             Command::Mask(args) => mask::run(args),
             Command::Replace(args) => replace::run(args),
+            Command::Flag(args) => flag::run(args),
         }
     }
 }

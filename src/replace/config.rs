@@ -77,7 +77,7 @@ impl ReplaceConfig {
     }
 
     /// version フィールドの検証
-    /// 未指定はエラー、サポート外バージョンもエラー (SPECS.md: 厳格運用)
+    /// 未指定はエラー、サポート外バージョンもエラー
     fn validate_version(&self) -> Result<(), ConfigError> {
         match self.version {
             None => Err(ConfigError::VersionMissing),

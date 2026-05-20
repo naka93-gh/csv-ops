@@ -1,6 +1,3 @@
-// 文字列置換の本体
-// 各セルに対し全ルールを並行評価 (連鎖なし)、マッチ位置の重複検出後に後ろから置換する
-
 use csv::StringRecord;
 
 use crate::error::TransformError;
