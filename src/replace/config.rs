@@ -185,3 +185,6 @@ fn compile_rule(
         })
     }
 }
+
+#[cfg(test)]
+mod tests;

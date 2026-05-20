@@ -50,3 +50,6 @@ pub(crate) fn detect_static_collisions(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
