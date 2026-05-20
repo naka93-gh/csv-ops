@@ -18,11 +18,14 @@ pub(crate) struct Cli {
 }
 
 /// サブコマンドの集約
+/// Command は CLI 起動時に 1 度だけ生成され dispatch するだけなので、
+/// variant 間のサイズ差は実害がない (large_enum_variant は許容)
 #[derive(Subcommand, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum Command {
     /// 指定カラムを文字数保持でマスクする
     Mask(mask::MaskArgs),
-    /// 全カラム全セルを横断的に置換する
+    /// 指定カラムを文字置換する (全カラムオプションあり)
     Replace(replace::ReplaceArgs),
 }
 

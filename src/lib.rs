@@ -4,7 +4,6 @@ mod error;
 mod io;
 mod mask;
 pub mod replace;
-pub mod stats;
 mod strategy;
 mod transform;
 

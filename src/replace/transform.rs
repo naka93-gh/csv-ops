@@ -46,13 +46,14 @@ impl ReplaceTransform {
 
     /// レコード単位の置換処理
     /// target で対象列を絞る (All なら全列、Indices なら指定列のみ)
+    /// 戻り値はこの行でマッチしたルール index の列 (統計集計用、重複あり = マッチ回数分)
     pub fn apply_record(
         &self,
         record: &mut StringRecord,
         row: u64,
         headers: Option<&StringRecord>,
         target: &TargetColumns,
-    ) -> Result<bool, TransformError> {
+    ) -> Result<Vec<usize>, TransformError> {
         // ヘッダー無し + 列番号指定の場合、解決時に範囲チェックできないため
         // データ行のカラム数に対してここで検証する
         if let TargetColumns::Indices(idx) = target {
@@ -68,7 +69,7 @@ impl ReplaceTransform {
 
         // cell ごとに置換処理
         // csv::StringRecord は cell 単位の差し替えができないので cell ごとに処理して最後に record を差し替える形をとる
-        let mut any_modified = false;
+        let mut row_matches: Vec<usize> = Vec::new();
         let mut new_fields: Vec<String> = Vec::with_capacity(record.len());
         for (col_index, field) in record.iter().enumerate() {
             // 対象列でなければ置換せず元の値をそのまま残す
@@ -84,26 +85,25 @@ impl ReplaceTransform {
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("col[{}]", col_index));
 
-            // 置換処理
-            let (replaced, modified) = self.apply_cell(field, row, &column_name)?;
-            if modified {
-                any_modified = true;
-            }
+            // 置換処理。matched はこのセルでマッチしたルール index 列
+            let (replaced, matched) = self.apply_cell(field, row, &column_name)?;
+            row_matches.extend(matched);
             new_fields.push(replaced);
         }
 
         // 置換処理後の cell で record を生成して差し替え
         *record = StringRecord::from(new_fields);
-        Ok(any_modified)
+        Ok(row_matches)
     }
 
     /// セル単位の置換処理
+    /// 戻り値は (置換後の文字列, マッチしたルール index 列)
     fn apply_cell(
         &self,
         cell: &str,
         row: u64,
         column: &str,
-    ) -> Result<(String, bool), TransformError> {
+    ) -> Result<(String, Vec<usize>), TransformError> {
         // cell に対してルール評価をしてマッチ位置を収集
         // 元の cell に対して全ルール評価するので、評価の連鎖はしない
         let mut matches: Vec<(usize, usize, &CompiledRule)> = Vec::new();
@@ -122,7 +122,7 @@ impl ReplaceTransform {
 
         // マッチ位置がなければ変更しないので処理終了
         if matches.is_empty() {
-            return Ok((cell.to_string(), false));
+            return Ok((cell.to_string(), Vec::new()));
         }
 
         // マッチ位置をソート
@@ -159,7 +159,9 @@ impl ReplaceTransform {
             result.replace_range(*start..*end, &replacement);
         }
 
-        Ok((result, true))
+        // マッチしたルール index を列挙 (統計集計用、マッチ 1 件につき 1 要素)
+        let matched: Vec<usize> = matches.iter().map(|(_, _, rule)| rule.id().index).collect();
+        Ok((result, matched))
     }
 
     /// セル内の単純置換マッチ位置をすべてマップに追加する

@@ -63,6 +63,18 @@ pub(crate) struct ReplaceArgs {
     /// 全カラムを対象にする (-c と排他)
     #[arg(long)]
     pub all_columns: bool,
+
+    /// 出力ファイルへ書き込まず、統計のみ表示する
+    #[arg(long)]
+    pub dry_run: bool,
+
+    /// 統計の出力形式 (text / json)
+    #[arg(long, value_name = "FORMAT", default_value = "text")]
+    pub stats_format: String,
+
+    /// 統計の出力先ファイル (未指定なら標準出力)
+    #[arg(long, value_name = "PATH")]
+    pub stats_file: Option<PathBuf>,
 }
 
 /// replace サブコマンドのエントリポイント
@@ -116,12 +128,22 @@ pub(crate) fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
         has_headers: !args.no_headers,
         case_insensitive: args.case_insensitive,
         columns,
+        dry_run: args.dry_run,
     };
 
     let stats = csv_ops::replace::run(request)?;
-    println!(
-        "Replace complete. {} 行処理、{} 行変更。",
-        stats.rows_processed, stats.rows_modified
-    );
+
+    // 統計を指定形式でフォーマット
+    let formatted = match args.stats_format.as_str() {
+        "json" => stats.to_json(),
+        "text" => stats.to_text(),
+        other => return Err(format!("不明な統計形式: {} (text / json)", other).into()),
+    };
+
+    // --stats-file 指定ならファイルへ、なければ標準出力へ
+    match args.stats_file {
+        Some(path) => std::fs::write(&path, formatted)?,
+        None => println!("{}", formatted),
+    }
     Ok(ExitCode::SUCCESS)
 }
