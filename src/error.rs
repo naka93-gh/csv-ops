@@ -59,4 +59,18 @@ pub enum TransformError {
 
     #[error("ヘッダ無し設定では名前指定 ({0}) は使えません。列番号で指定してください")]
     NameWithoutHeaders(String),
+
+    #[error("ルール {rule} の正規表現が不正です: {source}")]
+    InvalidRegex {
+        rule: String,
+        #[source]
+        source: regex::Error,
+    },
+
+    #[error("実行時のルール衝突 (行 {row}, カラム {column}): {}", rules.join(", "))]
+    RuntimeCollision {
+        row: u64,
+        column: String,
+        rules: Vec<String>,
+    },
 }

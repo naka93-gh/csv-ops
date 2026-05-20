@@ -2,6 +2,7 @@ mod config;
 mod error;
 mod io;
 mod mask;
+mod replace;
 mod strategy;
 mod transform;
 
