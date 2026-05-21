@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+pub(crate) mod convert;
 pub(crate) mod extract;
 pub(crate) mod flag;
 pub(crate) mod mask;
@@ -33,6 +34,8 @@ pub(crate) enum Command {
     Flag(flag::FlagArgs),
     /// 指定カラムからパターンマッチした文字列を抽出して列を追加する
     Extract(extract::ExtractArgs),
+    /// エンコーディングと区切り文字を変換する
+    Convert(convert::ConvertArgs),
 }
 
 impl Cli {
@@ -42,6 +45,7 @@ impl Cli {
             Command::Replace(args) => replace::run(args),
             Command::Flag(args) => flag::run(args),
             Command::Extract(args) => extract::run(args),
+            Command::Convert(args) => convert::run(args),
         }
     }
 }

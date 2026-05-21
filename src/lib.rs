@@ -1,5 +1,6 @@
 mod column;
 mod config;
+pub mod convert;
 mod error;
 pub mod extract;
 pub mod flag;

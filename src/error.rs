@@ -39,6 +39,9 @@ pub enum EncodingError {
 
     #[error("{encoding} でエンコードできない文字が含まれています")]
     EncodeFailure { encoding: String },
+
+    #[error("{encoding} としてデコードできないバイト列が含まれています")]
+    DecodeFailure { encoding: String },
 }
 
 /// 設定ファイル関連エラー
