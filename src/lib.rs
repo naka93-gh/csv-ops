@@ -1,18 +1,13 @@
 mod column;
-mod config;
 pub mod convert;
 mod error;
 pub mod extract;
 pub mod flag;
 mod io;
-mod mask;
+pub mod mask;
+mod pipeline;
 pub mod replace;
-mod strategy;
-mod transform;
 
 pub use column::ColumnRef;
-pub use config::{MaskConfig, Target};
 pub use error::{ConfigError, CsvOpsError, EncodingError, TransformError};
 pub use io::resolve_encoding;
-pub use mask::{MaskOptions, mask_csv};
-pub use strategy::{CharFill, MaskStrategy};

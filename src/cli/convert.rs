@@ -5,6 +5,8 @@ use std::process::ExitCode;
 use clap::Args;
 use csv_ops::convert::ConvertRequest;
 
+use super::parse_delimiter_alias;
+
 /// `csv-ops convert` の引数
 #[derive(Args, Debug)]
 pub(crate) struct ConvertArgs {
@@ -40,26 +42,11 @@ pub(crate) fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
         output: args.output,
         input_encoding: args.input_encoding,
         output_encoding: args.output_encoding,
-        input_delimiter: parse_delimiter(&args.input_delimiter)?,
-        output_delimiter: parse_delimiter(&args.output_delimiter)?,
+        input_delimiter: parse_delimiter_alias(&args.input_delimiter)?,
+        output_delimiter: parse_delimiter_alias(&args.output_delimiter)?,
     };
 
     let stats = csv_ops::convert::run(request)?;
     println!("変換行数: {}", stats.rows);
     Ok(ExitCode::SUCCESS)
-}
-
-/// 区切り文字エイリアスを 1 バイトに変換する
-fn parse_delimiter(alias: &str) -> Result<u8, Box<dyn Error>> {
-    match alias {
-        "comma" => Ok(b','),
-        "tab" => Ok(b'\t'),
-        "pipe" => Ok(b'|'),
-        "semicolon" => Ok(b';'),
-        other => Err(format!(
-            "不明な区切り文字: {} (comma / tab / pipe / semicolon)",
-            other
-        )
-        .into()),
-    }
 }

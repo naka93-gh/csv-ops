@@ -1,5 +1,4 @@
 pub(crate) mod config;
-pub(crate) mod rule;
 pub mod stats;
 pub(crate) mod transform;
 
@@ -10,28 +9,26 @@ use crate::error::CsvOpsError;
 use crate::io::resolve_encoding;
 use crate::pipeline::{PipelineOptions, run_pipeline};
 
-use config::FlagConfig;
-use stats::FlagStats;
-use transform::FlagTransform;
+use config::MaskConfig;
+use stats::MaskStats;
+use transform::MaskTransform;
 
-/// ルールの指定方法
-/// Config 指定と CLI 引数指定
-pub enum RuleSource {
+/// マスク対象の列指定の供給元
+/// Config ファイル指定と CLI 引数指定のどちらかに集約する
+pub enum MaskSource {
     /// TOML 設定ファイルのパス
     Config(PathBuf),
-    /// CLI 引数による 1 ルール (true/false 値はデフォルト固定)
+    /// CLI 引数による直接指定
     Inline {
-        pattern: String,
         columns: Vec<ColumnRef>,
-        out_col: String,
+        mask_char: char,
     },
 }
 
-/// flag::run に渡す設定一式
-/// CLI 引数 / Config ファイルどちらの経路でも、最終的にこの形に集約してから run を呼ぶ
-pub struct FlagRequest {
-    /// ルール指定 (Config ファイル or CLI 引数)
-    pub rules: RuleSource,
+/// mask::run に渡す設定一式
+pub struct MaskRequest {
+    /// 列指定 (Config ファイル or CLI 引数)
+    pub source: MaskSource,
     /// 入力ファイルパス
     pub input: PathBuf,
     /// 出力ファイルパス
@@ -48,10 +45,11 @@ pub struct FlagRequest {
     pub dry_run: bool,
 }
 
-/// flag サブコマンドのエントリポイント
-pub fn run(request: FlagRequest) -> Result<FlagStats, CsvOpsError> {
-    let FlagRequest {
-        rules,
+/// mask サブコマンドのエントリポイント
+/// 指定列を文字数を保ったままマスクする
+pub fn run(request: MaskRequest) -> Result<MaskStats, CsvOpsError> {
+    let MaskRequest {
+        source,
         input,
         output,
         input_encoding,
@@ -61,27 +59,23 @@ pub fn run(request: FlagRequest) -> Result<FlagStats, CsvOpsError> {
         dry_run,
     } = request;
 
-    // ルール指定を FlagConfig に統一する
-    let cfg = match rules {
-        RuleSource::Config(path) => {
+    // 列指定とマスク文字を解決する (Config 優先)
+    let (columns, mask_char) = match source {
+        MaskSource::Config(path) => {
             let text = std::fs::read_to_string(&path)?;
-            FlagConfig::from_toml(&text)?
+            let cfg = MaskConfig::from_toml(&text)?;
+            (cfg.columns().to_vec(), cfg.mask_char())
         }
-        RuleSource::Inline {
-            pattern,
-            columns,
-            out_col,
-        } => FlagConfig::from_single_rule(pattern, columns, out_col),
+        MaskSource::Inline { columns, mask_char } => (columns, mask_char),
     };
 
-    // ルールの compile・列解決・統計集計は FlagTransform が担う
-    let mut transform = FlagTransform::new(cfg);
+    let mut transform = MaskTransform::new(columns, mask_char);
     let opts = PipelineOptions {
         input,
         output,
         input_encoding: resolve_encoding(&input_encoding)?,
         output_encoding: resolve_encoding(&output_encoding)?,
-        // flag は列を追加するだけで区切り文字は変えない
+        // mask は内容のみ変換するので入出力で区切り文字は同一
         input_delimiter: delimiter,
         output_delimiter: delimiter,
         has_headers,

@@ -137,23 +137,16 @@ fn compile_rule(
             ConfigError::Validation(format!("{} に replacement がありません", id))
         })?;
 
-        // case_insensitive 有無で compile 経路を分ける
         // 不正な正規表現は compile 失敗するので TransformError::InvalidRegex に変換
-        let compiled = if case_insensitive {
-            regex::RegexBuilder::new(pattern)
-                .case_insensitive(true)
-                .build()
-        } else {
-            regex::Regex::new(pattern)
-        };
-        let compiled = compiled.map_err(|e| TransformError::InvalidRegex {
-            rule: id.to_string(),
-            source: e,
-        })?;
+        let pattern =
+            build_matcher(pattern, case_insensitive).map_err(|e| TransformError::InvalidRegex {
+                rule: id.to_string(),
+                source: e,
+            })?;
 
         Ok(CompiledRule::Regex {
             id,
-            pattern: compiled,
+            pattern,
             replacement: replacement.clone(),
         })
     } else {
@@ -178,12 +171,30 @@ fn compile_rule(
             .as_ref()
             .ok_or_else(|| ConfigError::Validation(format!("{} に to がありません", id)))?;
 
+        // from をエスケープして正規表現マッチャにする
+        // これで単純置換も正規表現と同じ非オーバーラップマッチで扱え、
+        // case_insensitive も正規表現側に一元化できる (文字位置のズレが起きない)
+        let matcher = build_matcher(&regex::escape(from), case_insensitive).map_err(|e| {
+            TransformError::InvalidRegex {
+                rule: id.to_string(),
+                source: e,
+            }
+        })?;
+
         Ok(CompiledRule::Simple {
             id,
+            matcher,
             from: from.clone(),
             to: to.clone(),
         })
     }
+}
+
+/// 正規表現をコンパイルする (case_insensitive 対応)
+fn build_matcher(pattern: &str, case_insensitive: bool) -> Result<regex::Regex, regex::Error> {
+    regex::RegexBuilder::new(pattern)
+        .case_insensitive(case_insensitive)
+        .build()
 }
 
 #[cfg(test)]

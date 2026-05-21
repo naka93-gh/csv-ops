@@ -1,16 +1,33 @@
 // ReplaceTransform の単体テスト
 
 use super::*;
+use crate::column::ColumnRef;
 use crate::replace::rule::RuleId;
 
+/// 単純置換ルールを作る (from をエスケープしてマッチャ化)
 fn simple(index: usize, from: &str, to: &str) -> CompiledRule {
     CompiledRule::Simple {
         id: RuleId { index, name: None },
+        matcher: regex::Regex::new(&regex::escape(from)).unwrap(),
         from: from.to_string(),
         to: to.to_string(),
     }
 }
 
+/// 大文字小文字を区別しない単純置換ルールを作る
+fn simple_ci(index: usize, from: &str, to: &str) -> CompiledRule {
+    CompiledRule::Simple {
+        id: RuleId { index, name: None },
+        matcher: regex::RegexBuilder::new(&regex::escape(from))
+            .case_insensitive(true)
+            .build()
+            .unwrap(),
+        from: from.to_string(),
+        to: to.to_string(),
+    }
+}
+
+/// 正規表現ルールを作る
 fn regex_rule(index: usize, pattern: &str, replacement: &str) -> CompiledRule {
     CompiledRule::Regex {
         id: RuleId { index, name: None },
@@ -23,72 +40,81 @@ fn rec(fields: &[&str]) -> StringRecord {
     StringRecord::from(fields.to_vec())
 }
 
+/// ルール列から ReplaceTransform を組み立てる (統計は自動初期化)
+fn transform(rules: Vec<CompiledRule>, columns: ColumnTarget) -> ReplaceTransform {
+    let ids: Vec<String> = rules.iter().map(|r| r.id().to_string()).collect();
+    ReplaceTransform::new(rules, columns, ReplaceStats::new(ids))
+}
+
 /// 単純置換が対象セルに適用される
 #[test]
 fn applies_simple_replacement() {
-    let t = ReplaceTransform::new(vec![simple(0, "未対応", "open")], false);
+    let mut t = transform(vec![simple(0, "未対応", "open")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["未対応", "データ"]);
-    let matched = t
-        .apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "open");
     assert_eq!(&r[1], "データ");
-    assert_eq!(matched, vec![0]);
+    assert_eq!(t.stats.per_rule[0].matches, 1);
 }
 
 /// 正規表現置換が適用される
 #[test]
 fn applies_regex_replacement() {
-    let t = ReplaceTransform::new(vec![regex_rule(0, r"\d+", "N")], false);
+    let mut t = transform(vec![regex_rule(0, r"\d+", "N")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["abc123def"]);
-    t.apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "abcNdef");
 }
 
 /// case_insensitive で大文字小文字を無視してマッチする
 #[test]
 fn case_insensitive_matches() {
-    let t = ReplaceTransform::new(vec![simple(0, "abc", "X")], true);
+    let mut t = transform(vec![simple_ci(0, "abc", "X")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["ABC"]);
-    t.apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "X");
 }
 
-/// マッチなしの行は変更されず、マッチ列も空
+/// マッチなしの行は変更されず、統計にも計上されない
 #[test]
 fn no_match_leaves_unchanged() {
-    let t = ReplaceTransform::new(vec![simple(0, "xxx", "yyy")], false);
+    let mut t = transform(vec![simple(0, "xxx", "yyy")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["abc", "def"]);
-    let matched = t
-        .apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "abc");
-    assert!(matched.is_empty());
+    assert_eq!(t.stats.rows_modified, 0);
 }
 
 /// 範囲が重なるルールは動的衝突エラーになる
 #[test]
 fn overlapping_rules_collide() {
-    let t = ReplaceTransform::new(
+    let mut t = transform(
         vec![simple(0, "未対応", "X"), simple(1, "対応", "Y")],
-        false,
+        ColumnTarget::All,
     );
+    t.init(None).unwrap();
     let mut r = rec(&["未対応"]);
-    let err = t
-        .apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap_err();
-    assert!(matches!(err, TransformError::RuntimeCollision { .. }));
+    let err = t.on_record(&mut r, 1).unwrap_err();
+    assert!(matches!(
+        err,
+        CsvOpsError::Transform(TransformError::RuntimeCollision { .. })
+    ));
 }
 
-/// 列指定 (Indices) で対象外の列は置換されない
+/// 列指定で対象外の列は置換されない
 #[test]
 fn target_columns_limits_scope() {
-    let t = ReplaceTransform::new(vec![simple(0, "a", "X")], false);
+    let mut t = transform(
+        vec![simple(0, "a", "X")],
+        ColumnTarget::Specified(vec![ColumnRef::Index(1)]),
+    );
+    t.init(None).unwrap();
     let mut r = rec(&["a", "a"]);
-    let target = TargetColumns::Indices(vec![1]);
-    t.apply_record(&mut r, 1, None, &target).unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "a"); // 列 0 は対象外
     assert_eq!(&r[1], "X"); // 列 1 は置換
 }
@@ -96,33 +122,34 @@ fn target_columns_limits_scope() {
 /// 1 セル内の複数マッチが後ろから正しく置換される
 #[test]
 fn multiple_matches_in_cell() {
-    let t = ReplaceTransform::new(vec![simple(0, "ab", "X")], false);
+    let mut t = transform(vec![simple(0, "ab", "X")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["ababab"]);
-    let matched = t
-        .apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "XXX");
-    assert_eq!(matched, vec![0, 0, 0]);
+    assert_eq!(t.stats.per_rule[0].matches, 3);
 }
 
 /// 連鎖なし: ルール 0 の置換結果はルール 1 の評価対象にならない
-/// "ab"→"xy" と "xy"→"zz" がある時、連鎖ありなら "zz"、連鎖なしなら "xy"
 #[test]
 fn no_rule_chaining() {
-    let t = ReplaceTransform::new(vec![simple(0, "ab", "xy"), simple(1, "xy", "zz")], false);
+    let mut t = transform(
+        vec![simple(0, "ab", "xy"), simple(1, "xy", "zz")],
+        ColumnTarget::All,
+    );
+    t.init(None).unwrap();
     let mut r = rec(&["ab"]);
-    t.apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "xy"); // 連鎖なしなので "zz" にはならない
 }
 
 /// 空セルは置換対象がなくそのまま
 #[test]
 fn empty_cell_unchanged() {
-    let t = ReplaceTransform::new(vec![simple(0, "a", "b")], false);
+    let mut t = transform(vec![simple(0, "a", "b")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["", "a"]);
-    t.apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "");
     assert_eq!(&r[1], "b");
 }
@@ -130,9 +157,28 @@ fn empty_cell_unchanged() {
 /// to が空文字列なら、マッチ部分の削除になる
 #[test]
 fn replace_to_empty_string() {
-    let t = ReplaceTransform::new(vec![simple(0, "x", "")], false);
+    let mut t = transform(vec![simple(0, "x", "")], ColumnTarget::All);
+    t.init(None).unwrap();
     let mut r = rec(&["axbxc"]);
-    t.apply_record(&mut r, 1, None, &TargetColumns::All)
-        .unwrap();
+    t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "abc");
+}
+
+/// ヘッダ無し + 範囲外の列番号指定は行処理時にエラー
+#[test]
+fn out_of_range_index_errors_without_headers() {
+    let mut t = transform(
+        vec![simple(0, "a", "b")],
+        ColumnTarget::Specified(vec![ColumnRef::Index(5)]),
+    );
+    t.init(None).unwrap();
+    let mut r = rec(&["1", "2"]);
+    let err = t.on_record(&mut r, 1).unwrap_err();
+    assert!(matches!(
+        err,
+        CsvOpsError::Transform(TransformError::IndexOutOfRange {
+            index: 5,
+            columns: 2
+        })
+    ));
 }

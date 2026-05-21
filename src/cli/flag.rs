@@ -6,6 +6,8 @@ use clap::Args;
 use csv_ops::ColumnRef;
 use csv_ops::flag::{FlagRequest, RuleSource};
 
+use super::parse_delimiter_alias;
+
 /// `csv-ops flag` の引数
 #[derive(Args, Debug)]
 pub(crate) struct FlagArgs {
@@ -41,8 +43,8 @@ pub(crate) struct FlagArgs {
     #[arg(long, default_value = "utf-8")]
     pub output_encoding: String,
 
-    /// 区切り文字
-    #[arg(long, default_value = ",")]
+    /// 区切り文字 (comma / tab / pipe / semicolon)
+    #[arg(long, value_name = "ALIAS", default_value = "comma")]
     pub delimiter: String,
 
     /// ヘッダ行なし CSV
@@ -86,8 +88,7 @@ pub(crate) fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
         }
     };
 
-    // 区切り文字は先頭バイトのみ採用 (csv crate の API は u8)
-    let delimiter = args.delimiter.as_bytes().first().copied().unwrap_or(b',');
+    let delimiter = parse_delimiter_alias(&args.delimiter)?;
 
     let request = FlagRequest {
         rules,

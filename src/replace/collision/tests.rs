@@ -6,6 +6,7 @@ use crate::replace::rule::RuleId;
 fn simple(index: usize, from: &str) -> CompiledRule {
     CompiledRule::Simple {
         id: RuleId { index, name: None },
+        matcher: regex::Regex::new(&regex::escape(from)).unwrap(),
         from: from.to_string(),
         to: String::new(),
     }

@@ -1,5 +1,7 @@
+use serde::Serialize;
+
 /// flag 実行の統計
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct FlagStats {
     /// 処理した行数 (ヘッダー除く)
     pub rows_processed: u64,
@@ -8,7 +10,7 @@ pub struct FlagStats {
 }
 
 /// 1 ルール分の統計
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct FlagRuleStat {
     /// 追加した列の名前
     pub out_col: String,
@@ -47,43 +49,7 @@ impl FlagStats {
     }
 
     /// JSON 形式でフォーマットする
-    /// 依存を増やさないため手書き。文字列はエスケープして埋め込む
     pub fn to_json(&self) -> String {
-        let mut out = String::new();
-        out.push_str("{\n");
-        out.push_str(&format!("  \"rows_processed\": {},\n", self.rows_processed));
-        out.push_str("  \"per_rule\": [");
-        for (i, r) in self.per_rule.iter().enumerate() {
-            if i > 0 {
-                out.push(',');
-            }
-            out.push_str("\n    {");
-            out.push_str(&format!("\"out_col\": \"{}\", ", escape_json(&r.out_col)));
-            out.push_str(&format!("\"matched_rows\": {}", r.matched_rows));
-            out.push('}');
-        }
-        if self.per_rule.is_empty() {
-            out.push_str("]\n");
-        } else {
-            out.push_str("\n  ]\n");
-        }
-        out.push('}');
-        out
+        serde_json::to_string_pretty(self).expect("FlagStats は常にシリアライズできる")
     }
-}
-
-/// JSON 文字列リテラル用の最小エスケープ
-fn escape_json(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c => out.push(c),
-        }
-    }
-    out
 }

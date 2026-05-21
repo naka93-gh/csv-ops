@@ -1,385 +1,386 @@
-use std::io::Cursor;
+use assert_cmd::Command;
+use predicates::prelude::*;
+use tempfile::tempdir;
 
-use csv_ops::{
-    CharFill, ColumnRef, CsvOpsError, EncodingError, MaskOptions, MaskStrategy, TransformError,
-    mask_csv, resolve_encoding,
-};
-use encoding_rs_io::DecodeReaderBytesBuilder;
+/// csv-ops バイナリの Command を返す
+fn csv_ops() -> Command {
+    Command::cargo_bin("csv-ops").unwrap()
+}
 
-// =========================================================================
-// mask 本体テスト
-// =========================================================================
-
-/// マスク対象カラムだけ置換される
 #[test]
-fn masks_target_columns_only() {
-    let input = "header1,header2,header3\nfoo,bar,baz\nhello,world,!\n";
-    let columns = [ColumnRef::Name("header2".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap();
-    let result = String::from_utf8(output).unwrap();
+fn masks_target_column_by_name() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "氏名,年齢,部署\n田中,30,営業\n佐藤,25,開発\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "氏名"])
+        .assert()
+        .success();
+
     assert_eq!(
-        result,
-        "header1,header2,header3\nfoo,***,baz\nhello,*****,!\n"
+        std::fs::read_to_string(&output).unwrap(),
+        "氏名,年齢,部署\n**,30,営業\n**,25,開発\n"
     );
 }
 
-/// 存在しないカラム指定はエラー
 #[test]
-fn returns_error_for_unknown_column() {
-    let input = "a,b\n1,2\n";
-    let columns = [ColumnRef::Name("nope".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap_err();
-    assert!(matches!(
-        err,
-        CsvOpsError::Transform(TransformError::UnknownColumn { ref name, .. }) if name == "nope"
-    ));
-}
+fn masks_multiple_columns() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b,c\nfoo,bar,baz\n").unwrap();
 
-/// 存在しないカラム指定のメッセージに「利用可能カラム一覧」が含まれる
-#[test]
-fn unknown_column_error_lists_available_columns() {
-    let input = "header1,header2,header3\n1,2,3\n";
-    let columns = [ColumnRef::Name("nope".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap_err();
-    let msg = err.to_string();
-    assert!(msg.contains("nope"), "msg = {}", msg);
-    assert!(msg.contains("header1"), "msg = {}", msg);
-    assert!(msg.contains("header2"), "msg = {}", msg);
-    assert!(msg.contains("header3"), "msg = {}", msg);
-}
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a,c"])
+        .assert()
+        .success();
 
-/// CSV パースエラーに行番号が含まれる
-/// 2 行目でカラム数が不整合だと csv::Error が発生し、position 経由で行番号が取れる
-#[test]
-fn csv_error_carries_line_number() {
-    let input = "a,b,c\n1,2\n";
-    let columns = [ColumnRef::Name("a".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap_err();
-    match err {
-        CsvOpsError::Csv { line, .. } => {
-            assert!(line.is_some(), "行番号が取れていない: {:?}", line);
-        }
-        other => panic!("Csv エラーを期待したが別の variant: {:?}", other),
-    }
-}
-
-/// タブ区切りも扱える
-#[test]
-fn handles_tab_delimiter() {
-    let input = "a\tb\n1\t2\n";
-    let columns = [ColumnRef::Name("b".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b'\t',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap();
-    assert_eq!(String::from_utf8(output).unwrap(), "a\tb\n1\t*\n");
-}
-
-/// ヘッダ有りで列番号 (0-indexed) 指定が動く
-#[test]
-fn masks_by_index_with_headers() {
-    let input = "a,b,c\nfoo,bar,baz\n";
-    let columns = [ColumnRef::Index(1)];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap();
-    assert_eq!(String::from_utf8(output).unwrap(), "a,b,c\nfoo,***,baz\n");
-}
-
-/// ヘッダ無し設定で列番号指定が動く (ヘッダ行も出力されない)
-#[test]
-fn masks_by_index_without_headers() {
-    let input = "foo,bar,baz\nhello,world,!\n";
-    let columns = [ColumnRef::Index(0)];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: false,
-        },
-    )
-    .unwrap();
     assert_eq!(
-        String::from_utf8(output).unwrap(),
+        std::fs::read_to_string(&output).unwrap(),
+        "a,b,c\n***,bar,***\n"
+    );
+}
+
+#[test]
+fn masks_by_index() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b,c\nfoo,bar,baz\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "1"])
+        .assert()
+        .success();
+
+    assert_eq!(
+        std::fs::read_to_string(&output).unwrap(),
+        "a,b,c\nfoo,***,baz\n"
+    );
+}
+
+#[test]
+fn masks_without_headers_by_index() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "foo,bar,baz\nhello,world,!\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "0", "--no-headers"])
+        .assert()
+        .success();
+
+    assert_eq!(
+        std::fs::read_to_string(&output).unwrap(),
         "***,bar,baz\n*****,world,!\n"
     );
 }
 
-/// ヘッダ無し設定で名前指定するとエラー
 #[test]
-fn name_spec_errors_without_headers() {
-    let input = "1,2,3\n";
-    let columns = [ColumnRef::Name("a".to_string())];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: false,
-        },
-    )
-    .unwrap_err();
-    assert!(matches!(
-        err,
-        CsvOpsError::Transform(TransformError::NameWithoutHeaders(ref n)) if n == "a"
-    ));
+fn uses_configured_mask_char() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\nfoo,bar\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a", "--mask-char", "X"])
+        .assert()
+        .success();
+
+    assert_eq!(std::fs::read_to_string(&output).unwrap(), "a,b\nXXX,bar\n");
 }
 
-/// 列番号が範囲外だとエラー (ヘッダ有り)
 #[test]
-fn out_of_range_index_errors_with_headers() {
-    let input = "a,b\n1,2\n";
-    let columns = [ColumnRef::Index(5)];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: true,
-        },
-    )
-    .unwrap_err();
-    assert!(matches!(
-        err,
-        CsvOpsError::Transform(TransformError::IndexOutOfRange {
-            index: 5,
-            columns: 2,
-        })
-    ));
+fn unknown_column_fails_listing_available() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "header1,header2\n1,2\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "nope"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("nope").and(predicate::str::contains("header1")));
+    // 失敗時に出力ファイルを残さない
+    assert!(!output.exists());
 }
 
-/// 列番号が範囲外だとエラー (ヘッダ無し、データ行で検知)
 #[test]
-fn out_of_range_index_errors_without_headers() {
-    let input = "1,2\n";
-    let columns = [ColumnRef::Index(5)];
-    let strategy = CharFill { ch: '*' };
-    let mut output = Vec::new();
-    let err = mask_csv(
-        input.as_bytes(),
-        &mut output,
-        &MaskOptions {
-            columns: &columns,
-            delimiter: b',',
-            strategy: &strategy,
-            has_headers: false,
-        },
+fn name_without_headers_fails() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "1,2,3\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "氏名", "--no-headers"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn out_of_range_index_fails() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\n1,2\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "5"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn handles_tab_delimiter() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a\tb\nfoo\tbar\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "b", "--delimiter", "tab"])
+        .assert()
+        .success();
+
+    assert_eq!(
+        std::fs::read_to_string(&output).unwrap(),
+        "a\tb\nfoo\t***\n"
+    );
+}
+
+#[test]
+fn shift_jis_round_trip() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    let (bytes, _, _) = encoding_rs::SHIFT_JIS.encode("氏名,年齢\n田中,30\n");
+    std::fs::write(&input, &bytes).unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args([
+            "-c",
+            "氏名",
+            "--input-encoding",
+            "shift_jis",
+            "--output-encoding",
+            "shift_jis",
+        ])
+        .assert()
+        .success();
+
+    let out = std::fs::read(&output).unwrap();
+    let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&out);
+    assert!(!had_errors);
+    assert_eq!(decoded, "氏名,年齢\n**,30\n");
+}
+
+#[test]
+fn decode_failure_fails() {
+    // SJIS バイト列を utf-8 として読もうとするとデコード失敗で停止する
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    let (bytes, _, _) = encoding_rs::SHIFT_JIS.encode("氏名\n田中\n");
+    std::fs::write(&input, &bytes).unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "0", "--no-headers"])
+        .assert()
+        .failure();
+    assert!(!output.exists());
+}
+
+#[test]
+fn preserves_crlf_line_ending() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\r\nfoo,bar\r\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a"])
+        .assert()
+        .success();
+
+    assert_eq!(
+        std::fs::read_to_string(&output).unwrap(),
+        "a,b\r\n***,bar\r\n"
+    );
+}
+
+#[test]
+fn dry_run_writes_no_output() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\nfoo,bar\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a", "--dry-run"])
+        .assert()
+        .success();
+
+    assert!(!output.exists());
+}
+
+#[test]
+fn stats_text_reports_counts() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\nfoo,bar\n,baz\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("処理行数:     2").and(
+            // 空セルの行はマスクされないのでマスク行数は 1
+            predicate::str::contains("マスク行数:   1"),
+        ));
+}
+
+#[test]
+fn stats_json_format() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\nfoo,bar\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a", "--stats-format", "json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"cells_masked\": 1"));
+}
+
+#[test]
+fn config_mode_masks_columns() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    let config = dir.path().join("mask.toml");
+    std::fs::write(&input, "氏名,年齢\n田中,30\n").unwrap();
+    std::fs::write(
+        &config,
+        "version = 1\ncolumns = [\"氏名\"]\n\n[options]\nmask_char = \"#\"\n",
     )
-    .unwrap_err();
-    assert!(matches!(
-        err,
-        CsvOpsError::Transform(TransformError::IndexOutOfRange {
-            index: 5,
-            columns: 2,
-        })
-    ));
+    .unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .arg("--config")
+        .arg(&config)
+        .assert()
+        .success();
+
+    assert_eq!(
+        std::fs::read_to_string(&output).unwrap(),
+        "氏名,年齢\n##,30\n"
+    );
 }
 
-// =========================================================================
-// MaskStrategy / CharFill のテスト
-// =========================================================================
+#[test]
+fn config_missing_version_fails() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    let config = dir.path().join("mask.toml");
+    std::fs::write(&input, "a,b\n1,2\n").unwrap();
+    std::fs::write(&config, "columns = [\"a\"]\n").unwrap();
 
-mod strategy_tests {
-    use super::*;
-
-    /// ASCII 文字列を同じ長さの mask_char で埋める
-    #[test]
-    fn char_fill_replaces_ascii_with_same_length() {
-        let s = CharFill { ch: '*' };
-        assert_eq!(s.mask("abc"), "***");
-        assert_eq!(s.mask("hello"), "*****");
-    }
-
-    /// 空文字列は空文字列のまま
-    #[test]
-    fn char_fill_keeps_empty_string_empty() {
-        let s = CharFill { ch: '*' };
-        assert_eq!(s.mask(""), "");
-    }
-
-    /// 日本語などのマルチバイト文字も「文字数」単位で塗り潰す (バイト長ではない)
-    #[test]
-    fn char_fill_counts_characters_not_bytes() {
-        let s = CharFill { ch: '*' };
-        // "あいう" は UTF-8 で 9 バイトだが 3 文字
-        assert_eq!(s.mask("あいう"), "***");
-        // "a日b" は 5 バイトだが 3 文字
-        assert_eq!(s.mask("a日b"), "***");
-    }
-
-    /// 絵文字 (サロゲートペア相当) も Unicode scalar 単位で 1 文字扱い
-    #[test]
-    fn char_fill_handles_emoji_as_scalar() {
-        let s = CharFill { ch: '*' };
-        // "🦀" は 1 文字 (U+1F980)
-        assert_eq!(s.mask("🦀"), "*");
-    }
-
-    /// 塗り潰し文字を切り替えられる
-    #[test]
-    fn char_fill_uses_configured_char() {
-        let s = CharFill { ch: 'X' };
-        assert_eq!(s.mask("abc"), "XXX");
-    }
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .arg("--config")
+        .arg(&config)
+        .assert()
+        .failure();
 }
 
-// =========================================================================
-// エンコーディング解決のテスト
-// =========================================================================
+#[test]
+fn requires_columns_or_config() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\n1,2\n").unwrap();
 
-mod encoding_tests {
-    use super::*;
-
-    /// utf-8 が解決できる
-    #[test]
-    fn resolves_utf8() {
-        let enc = resolve_encoding("utf-8").unwrap();
-        assert_eq!(enc.name(), "UTF-8");
-    }
-
-    /// shift_jis が解決できる
-    #[test]
-    fn resolves_shift_jis() {
-        let enc = resolve_encoding("shift_jis").unwrap();
-        assert_eq!(enc.name(), "Shift_JIS");
-    }
-
-    /// euc-jp が解決できる
-    #[test]
-    fn resolves_euc_jp() {
-        let enc = resolve_encoding("euc-jp").unwrap();
-        assert_eq!(enc.name(), "EUC-JP");
-    }
-
-    /// サポート外の名前はエラー
-    #[test]
-    fn rejects_unknown_encoding() {
-        let err = resolve_encoding("latin1").unwrap_err();
-        assert!(matches!(err, EncodingError::Unsupported(ref n) if n == "latin1"));
-    }
-
-    /// 表記揺れ (大文字 / ハイフン違い) は受け付けない (ホワイトリスト方式)
-    #[test]
-    fn rejects_case_variations() {
-        assert!(resolve_encoding("UTF-8").is_err());
-        assert!(resolve_encoding("sjis").is_err());
-        assert!(resolve_encoding("cp932").is_err());
-    }
-
-    /// Shift_JIS で書かれた CSV を DecodeReaderBytes 経由で読み、UTF-8 として出力できる
-    #[test]
-    fn reads_shift_jis_csv_through_decoder() {
-        // Shift_JIS で "あ,b\n1,2\n" を表現したバイト列
-        let input: &[u8] = &[
-            0x82, 0xA0, // "あ"
-            0x2C, // ","
-            0x62, // "b"
-            0x0A, // "\n"
-            0x31, // "1"
-            0x2C, // ","
-            0x32, // "2"
-            0x0A, // "\n"
-        ];
-        let encoding = resolve_encoding("shift_jis").unwrap();
-        let decoded = DecodeReaderBytesBuilder::new()
-            .encoding(Some(encoding))
-            .build(Cursor::new(input));
-
-        let columns = [ColumnRef::Name("b".to_string())];
-        let strategy = CharFill { ch: '*' };
-        let mut output = Vec::new();
-        mask_csv(
-            decoded,
-            &mut output,
-            &MaskOptions {
-                columns: &columns,
-                delimiter: b',',
-                strategy: &strategy,
-                has_headers: true,
-            },
-        )
-        .unwrap();
-        // 出力は UTF-8 で "あ,b\n1,*\n"
-        assert_eq!(String::from_utf8(output).unwrap(), "あ,b\n1,*\n");
-    }
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .assert()
+        .failure();
 }

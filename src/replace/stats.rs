@@ -1,5 +1,7 @@
+use serde::Serialize;
+
 /// replace 実行の統計
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ReplaceStats {
     /// 処理した行数 (ヘッダー除く)
     pub rows_processed: u64,
@@ -12,7 +14,7 @@ pub struct ReplaceStats {
 }
 
 /// 1 ルール分の統計
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct RuleStat {
     /// ルール識別子 (rule[N] "name" 形式)
     pub rule_id: String,
@@ -61,49 +63,7 @@ impl ReplaceStats {
     }
 
     /// JSON 形式でフォーマットする
-    /// 依存を増やさないため手書き。文字列はエスケープして埋め込む
     pub fn to_json(&self) -> String {
-        let mut out = String::new();
-        out.push_str("{\n");
-        out.push_str(&format!("  \"rows_processed\": {},\n", self.rows_processed));
-        out.push_str(&format!("  \"rows_modified\": {},\n", self.rows_modified));
-        out.push_str(&format!(
-            "  \"total_replacements\": {},\n",
-            self.total_replacements
-        ));
-        out.push_str("  \"per_rule\": [");
-        for (i, r) in self.per_rule.iter().enumerate() {
-            if i > 0 {
-                out.push(',');
-            }
-            out.push_str("\n    {");
-            out.push_str(&format!("\"rule\": \"{}\", ", escape_json(&r.rule_id)));
-            out.push_str(&format!("\"matches\": {}, ", r.matches));
-            out.push_str(&format!("\"rows_affected\": {}", r.rows_affected));
-            out.push('}');
-        }
-        if self.per_rule.is_empty() {
-            out.push_str("]\n");
-        } else {
-            out.push_str("\n  ]\n");
-        }
-        out.push('}');
-        out
+        serde_json::to_string_pretty(self).expect("ReplaceStats は常にシリアライズできる")
     }
-}
-
-/// JSON 文字列リテラル用の最小エスケープ
-fn escape_json(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c => out.push(c),
-        }
-    }
-    out
 }

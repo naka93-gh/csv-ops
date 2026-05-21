@@ -12,6 +12,22 @@ pub(crate) mod flag;
 pub(crate) mod mask;
 pub(crate) mod replace;
 
+/// 区切り文字エイリアスを 1 バイトに変換する
+/// comma / tab / pipe / semicolon のいずれかを受け付ける
+pub(crate) fn parse_delimiter_alias(alias: &str) -> Result<u8, Box<dyn Error>> {
+    match alias {
+        "comma" => Ok(b','),
+        "tab" => Ok(b'\t'),
+        "pipe" => Ok(b'|'),
+        "semicolon" => Ok(b';'),
+        other => Err(format!(
+            "不明な区切り文字: {} (comma / tab / pipe / semicolon)",
+            other
+        )
+        .into()),
+    }
+}
+
 /// csv-ops のトップレベル CLI
 #[derive(Parser, Debug)]
 #[command(name = "csv-ops", version, about = "CSV 処理用の Rust 製 CLI ツール", long_about = None)]

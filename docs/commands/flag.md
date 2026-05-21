@@ -28,7 +28,7 @@ csv-ops flag -i <IN> -o <OUT> --config <FILE>
 | `--config <FILE>`           | -        | 設定ファイル (TOML)。指定時は `--pattern` 等は無視 |
 | `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp） |
 | `--output-encoding <ENC>`   | `utf-8`  | 出力エンコーディング                         |
-| `--delimiter <D>`           | `,`      | 区切り文字                                   |
+| `--delimiter <ALIAS>`       | `comma`  | 区切り文字（comma / tab / pipe / semicolon） |
 | `--no-headers`              | off      | ヘッダ行なし CSV として扱う                  |
 | `--dry-run`                 | off      | 出力ファイルへ書き込まず統計のみ表示         |
 | `--stats-format <FORMAT>`   | `text`   | 統計の出力形式（text / json）                |
