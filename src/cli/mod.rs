@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+pub(crate) mod extract;
 pub(crate) mod flag;
 pub(crate) mod mask;
 pub(crate) mod replace;
@@ -30,6 +31,8 @@ pub(crate) enum Command {
     Replace(replace::ReplaceArgs),
     /// 指定カラムをパターン判定して真偽値の列を追加する
     Flag(flag::FlagArgs),
+    /// 指定カラムからパターンマッチした文字列を抽出して列を追加する
+    Extract(extract::ExtractArgs),
 }
 
 impl Cli {
@@ -38,6 +41,7 @@ impl Cli {
             Command::Mask(args) => mask::run(args),
             Command::Replace(args) => replace::run(args),
             Command::Flag(args) => flag::run(args),
+            Command::Extract(args) => extract::run(args),
         }
     }
 }

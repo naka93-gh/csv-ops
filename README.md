@@ -50,9 +50,15 @@ csv-ops replace -i in.csv -o out.csv -c status --from 未対応 --to open
 csv-ops flag -i in.csv -o out.csv -c city --pattern "東京|大阪" --out-col major
 ```
 
+### extract — パターンにマッチした文字列を抽出してカラムを追加
+
+```
+csv-ops extract -i in.csv -o out.csv -c memo --pattern "\d{2,4}-\d{4}-\d{4}" --out-col phone
+```
+
 ## ドキュメント
 
-- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag の詳細
+- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag / extract の詳細
 
 ## ライセンス
 

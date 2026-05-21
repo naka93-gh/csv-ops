@@ -1,6 +1,7 @@
 mod column;
 mod config;
 mod error;
+pub mod extract;
 pub mod flag;
 mod io;
 mod mask;
