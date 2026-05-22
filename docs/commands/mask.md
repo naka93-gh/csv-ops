@@ -24,7 +24,7 @@ csv-ops mask -i <IN> -o <OUT> --config <FILE>
 | `-c`, `--columns <COLUMNS>` | -        | 対象列（カンマ区切り、列名または列番号）           |
 | `--config <FILE>`           | -        | 設定ファイル (TOML)。指定時は `-c` / `--mask-char` は無視 |
 | `--mask-char <CHAR>`        | `*`      | マスク文字（先頭 1 文字を使用）                    |
-| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp） |
+| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto） |
 | `--output-encoding <ENC>`   | `utf-8`  | 出力エンコーディング                               |
 | `--delimiter <ALIAS>`       | `comma`  | 区切り文字（comma / tab / pipe / semicolon）       |
 | `--no-headers`              | off      | ヘッダ行なし CSV として扱う                        |

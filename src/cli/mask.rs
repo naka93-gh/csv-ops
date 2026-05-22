@@ -34,7 +34,7 @@ pub(crate) struct MaskArgs {
     #[arg(long, value_name = "CHAR", default_value = "*")]
     pub mask_char: String,
 
-    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
     #[arg(long, default_value = "utf-8")]
     pub input_encoding: String,
 

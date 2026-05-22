@@ -29,7 +29,7 @@ csv-ops replace -i <IN> -o <OUT> (-c <列> | --all-columns) --from <S> --to <S> 
 | `--to <S>`                  | -        | 置換先（CLI 引数モード）                     |
 | `--regex`                   | off      | `--from` を正規表現として扱う                |
 | `--case-insensitive`        | off      | 大文字小文字を区別しない                     |
-| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp） |
+| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto） |
 | `--output-encoding <ENC>`   | `utf-8`  | 出力エンコーディング                         |
 | `--delimiter <ALIAS>`       | `comma`  | 区切り文字（comma / tab / pipe / semicolon） |
 | `--no-headers`              | off      | ヘッダ行なし CSV として扱う                  |

@@ -218,6 +218,50 @@ fn convert_decode_failure_fails() {
 }
 
 #[test]
+fn convert_auto_detects_sjis_input() {
+    // --input-encoding auto は SJIS 入力をファイル先頭から判定する
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let (bytes, _, _) = encoding_rs::SHIFT_JIS.encode("名前,年齢\n田中,30\n");
+    std::fs::write(&input, &bytes).unwrap();
+    let output = dir.path().join("out.csv");
+
+    csv_ops()
+        .arg("convert")
+        .arg("-i")
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["--input-encoding", "auto"])
+        .assert()
+        .success();
+
+    let out = std::fs::read_to_string(&output).unwrap();
+    assert_eq!(out, "名前,年齢\n田中,30\n");
+}
+
+#[test]
+fn convert_auto_detects_utf8_input() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    std::fs::write(&input, "名前,年齢\n田中,30\n").unwrap();
+    let output = dir.path().join("out.csv");
+
+    csv_ops()
+        .arg("convert")
+        .arg("-i")
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["--input-encoding", "auto"])
+        .assert()
+        .success();
+
+    let out = std::fs::read_to_string(&output).unwrap();
+    assert_eq!(out, "名前,年齢\n田中,30\n");
+}
+
+#[test]
 fn convert_invalid_delimiter_fails() {
     let dir = tempdir().unwrap();
     let input = dir.path().join("in.csv");

@@ -26,7 +26,7 @@ csv-ops flag -i <IN> -o <OUT> --config <FILE>
 | `--pattern <RE>`            | -        | マッチ判定の正規表現（CLI 引数モード）       |
 | `--out-col <NAME>`          | -        | 追加する列の名前（CLI 引数モード）           |
 | `--config <FILE>`           | -        | 設定ファイル (TOML)。指定時は `--pattern` 等は無視 |
-| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp） |
+| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto） |
 | `--output-encoding <ENC>`   | `utf-8`  | 出力エンコーディング                         |
 | `--delimiter <ALIAS>`       | `comma`  | 区切り文字（comma / tab / pipe / semicolon） |
 | `--no-headers`              | off      | ヘッダ行なし CSV として扱う                  |

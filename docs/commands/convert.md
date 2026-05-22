@@ -17,7 +17,7 @@ csv-ops convert -i <IN> -o <OUT> [options]
 | ---------------------------- | ------- | -------------------------------------------------- |
 | `-i`, `--input <IN>`         | -       | 入力ファイル                                       |
 | `-o`, `--output <OUT>`       | -       | 出力ファイル                                       |
-| `--input-encoding <ENC>`     | `utf-8` | 入力エンコーディング（utf-8 / shift_jis / euc-jp） |
+| `--input-encoding <ENC>`     | `utf-8` | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto） |
 | `--output-encoding <ENC>`    | `utf-8` | 出力エンコーディング（utf-8 / shift_jis / euc-jp） |
 | `--input-delimiter <ALIAS>`  | `comma` | 入力区切り文字（comma / tab / pipe / semicolon）   |
 | `--output-delimiter <ALIAS>` | `comma` | 出力区切り文字（comma / tab / pipe / semicolon）   |
@@ -30,7 +30,7 @@ csv-ops convert -i <IN> -o <OUT> [options]
 - **入力 BOM** — UTF-8 BOM があれば自動で除去する。出力に BOM は付与しない。
 - **デコード失敗** — 指定した入力エンコーディングで読めないバイト列があればエラー停止する（不正バイトを黙って置換しない）。
 - **クォート** — 必要時のみクォートする（quote-minimal）。
-- エンコーディングの自動判定（`auto`）は持たない。エンコーディングが不明な場合は `csv-ops info` で確認する。
+- **エンコーディング自動判定** — `--input-encoding auto` を指定すると、入力ファイル先頭から UTF-8 / Shift_JIS を判定する。先頭 64KB のみを見るため、先頭が ASCII のみで後半に非 UTF-8 バイトが現れるファイルでは取り違える場合がある（EUC-JP は自動判定の対象外）。確実に判定したい場合は `csv-ops info` で確認する。
 
 ## 使用例
 
@@ -38,6 +38,12 @@ csv-ops convert -i <IN> -o <OUT> [options]
 
 ```
 csv-ops convert -i sjis.csv -o utf8.csv --input-encoding shift_jis
+```
+
+### エンコーディングを自動判定して UTF-8 へ
+
+```
+csv-ops convert -i unknown.csv -o utf8.csv --input-encoding auto
 ```
 
 ### 区切り文字をカンマからタブへ

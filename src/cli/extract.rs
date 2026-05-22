@@ -39,7 +39,7 @@ pub(crate) struct ExtractArgs {
     #[arg(long, value_name = "SEP")]
     pub separator: Option<String>,
 
-    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
     #[arg(long, default_value = "utf-8")]
     pub input_encoding: String,
 

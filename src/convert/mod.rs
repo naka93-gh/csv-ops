@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use csv::StringRecord;
 
 use crate::error::CsvOpsError;
-use crate::io::resolve_encoding;
+use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, RecordTransform, run_pipeline};
 
 /// convert::run に渡す設定一式
@@ -12,7 +12,7 @@ pub struct ConvertRequest {
     pub input: PathBuf,
     /// 出力ファイルパス
     pub output: PathBuf,
-    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp / auto)
     pub input_encoding: String,
     /// 出力エンコーディング名
     pub output_encoding: String,
@@ -48,11 +48,15 @@ impl RecordTransform for PassThrough {
 /// convert サブコマンドのエントリポイント
 /// エンコーディングと区切り文字だけを変換して素通しする
 pub fn run(request: ConvertRequest) -> Result<ConvertStats, CsvOpsError> {
+    // 入力エンコーディングは auto 指定ならファイル先頭から推定する
+    let input_encoding = resolve_input_encoding(&request.input_encoding, &request.input)?;
+    let output_encoding = resolve_encoding(&request.output_encoding)?;
+
     let opts = PipelineOptions {
         input: request.input,
         output: request.output,
-        input_encoding: resolve_encoding(&request.input_encoding)?,
-        output_encoding: resolve_encoding(&request.output_encoding)?,
+        input_encoding,
+        output_encoding,
         input_delimiter: request.input_delimiter,
         output_delimiter: request.output_delimiter,
         // convert は全行を等価に素通しするのでヘッダー概念を持たない

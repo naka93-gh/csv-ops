@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
-use crate::io::resolve_encoding;
+use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
 
 use config::FlagConfig;
@@ -36,7 +36,7 @@ pub struct FlagRequest {
     pub input: PathBuf,
     /// 出力ファイルパス
     pub output: PathBuf,
-    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp / auto)
     pub input_encoding: String,
     /// 出力エンコーディング名
     pub output_encoding: String,
@@ -74,13 +74,17 @@ pub fn run(request: FlagRequest) -> Result<FlagStats, CsvOpsError> {
         } => FlagConfig::from_single_rule(pattern, columns, out_col),
     };
 
+    // 入力エンコーディングは auto 指定ならファイル先頭から推定する
+    let input_encoding = resolve_input_encoding(&input_encoding, &input)?;
+    let output_encoding = resolve_encoding(&output_encoding)?;
+
     // ルールの compile・列解決・統計集計は FlagTransform が担う
     let mut transform = FlagTransform::new(cfg);
     let opts = PipelineOptions {
         input,
         output,
-        input_encoding: resolve_encoding(&input_encoding)?,
-        output_encoding: resolve_encoding(&output_encoding)?,
+        input_encoding,
+        output_encoding,
         // flag は列を追加するだけで区切り文字は変えない
         input_delimiter: delimiter,
         output_delimiter: delimiter,

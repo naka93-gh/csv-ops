@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
-use crate::io::resolve_encoding;
+use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
 
 use collision::detect_static_collisions;
@@ -46,7 +46,7 @@ pub struct ReplaceRequest {
     pub input: PathBuf,
     /// 出力ファイルパス
     pub output: PathBuf,
-    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp / auto)
     pub input_encoding: String,
     /// 出力エンコーディング名
     pub output_encoding: String,
@@ -93,13 +93,17 @@ pub fn run(request: ReplaceRequest) -> Result<ReplaceStats, CsvOpsError> {
     // per_rule 統計の初期化用にルール ID を集める (compiled が move される前に)
     let rule_ids: Vec<String> = compiled.iter().map(|r| r.id().to_string()).collect();
 
+    // 入力エンコーディングは auto 指定ならファイル先頭から推定する
+    let input_encoding = resolve_input_encoding(&input_encoding, &input)?;
+    let output_encoding = resolve_encoding(&output_encoding)?;
+
     // 置換処理と統計集計は ReplaceTransform が担い、パイプラインが I/O を担う
     let mut transform = ReplaceTransform::new(compiled, columns, ReplaceStats::new(rule_ids));
     let opts = PipelineOptions {
         input,
         output,
-        input_encoding: resolve_encoding(&input_encoding)?,
-        output_encoding: resolve_encoding(&output_encoding)?,
+        input_encoding,
+        output_encoding,
         // replace は内容のみ変換するので入出力で区切り文字は同一
         input_delimiter: delimiter,
         output_delimiter: delimiter,

@@ -18,7 +18,7 @@ pub(crate) struct ConvertArgs {
     #[arg(short = 'o', long)]
     pub output: PathBuf,
 
-    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp)
+    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
     #[arg(long, default_value = "utf-8")]
     pub input_encoding: String,
 
