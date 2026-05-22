@@ -3,6 +3,7 @@ pub mod convert;
 mod error;
 pub mod extract;
 pub mod flag;
+pub mod info;
 mod io;
 pub mod mask;
 mod pipeline;

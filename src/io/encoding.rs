@@ -16,7 +16,6 @@ pub fn resolve_encoding(name: &str) -> Result<&'static Encoding, EncodingError> 
 /// バイト列からエンコーディングを推定する
 /// UTF-8 BOM があれば UTF-8、なければ UTF-8 として厳密デコードを試し、成功すれば UTF-8、失敗すれば Shift_JIS とみなす
 /// 戻り値は (エンコーディング, BOM 有無)。EUC-JP は自動判定の対象外
-#[allow(dead_code)]
 pub fn detect_encoding(bytes: &[u8]) -> (&'static Encoding, bool) {
     if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
         return (encoding_rs::UTF_8, true);

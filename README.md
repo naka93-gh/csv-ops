@@ -54,9 +54,15 @@ csv-ops extract -i in.csv -o out.csv -c memo --pattern "\d{2,4}-\d{4}-\d{4}" --o
 csv-ops convert -i sjis.csv -o utf8.csv --input-encoding shift_jis
 ```
 
+### info — CSV の情報表示
+
+```
+csv-ops info -i data.csv
+```
+
 ## ドキュメント
 
-- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag / extract / convert の詳細
+- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag / extract / convert / info の詳細
 
 ## ライセンス
 

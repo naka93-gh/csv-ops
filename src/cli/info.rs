@@ -1,0 +1,56 @@
+use std::error::Error;
+use std::path::PathBuf;
+use std::process::ExitCode;
+
+use clap::Args;
+use csv_ops::info::InfoRequest;
+
+use super::parse_delimiter_alias;
+
+/// `csv-ops info` の引数
+#[derive(Args, Debug)]
+pub(crate) struct InfoArgs {
+    /// 入力ファイル
+    #[arg(short = 'i', long)]
+    pub input: PathBuf,
+
+    /// 出力形式 (text / json)
+    #[arg(long, value_name = "FORMAT", default_value = "text")]
+    pub format: String,
+
+    /// 区切り文字 (comma / tab / pipe / semicolon)。未指定ならヘッダー行から自動判定
+    #[arg(long, value_name = "ALIAS")]
+    pub input_delimiter: Option<String>,
+
+    /// クォート文字
+    #[arg(long, value_name = "CHAR", default_value = "\"")]
+    pub input_quote: String,
+}
+
+/// info サブコマンドのエントリポイント
+pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
+    // 区切り文字は指定があればエイリアスを解決、なければ None (自動判定)
+    let delimiter = match args.input_delimiter {
+        Some(alias) => Some(parse_delimiter_alias(&alias)?),
+        None => None,
+    };
+
+    // クォート文字は先頭バイトのみ採用 (csv crate の API は u8)
+    let quote = args.input_quote.as_bytes().first().copied().unwrap_or(b'"');
+
+    let request = InfoRequest {
+        input: args.input,
+        delimiter,
+        quote,
+    };
+
+    let report = csv_ops::info::run(request)?;
+
+    let formatted = match args.format.as_str() {
+        "json" => report.to_json(),
+        "text" => report.to_text(),
+        other => return Err(format!("不明な出力形式: {} (text / json)", other).into()),
+    };
+    println!("{}", formatted);
+    Ok(ExitCode::SUCCESS)
+}

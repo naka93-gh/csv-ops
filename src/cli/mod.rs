@@ -9,6 +9,7 @@ use clap::{Parser, Subcommand};
 pub(crate) mod convert;
 pub(crate) mod extract;
 pub(crate) mod flag;
+pub(crate) mod info;
 pub(crate) mod mask;
 pub(crate) mod replace;
 
@@ -52,6 +53,8 @@ pub(crate) enum Command {
     Extract(extract::ExtractArgs),
     /// エンコーディングと区切り文字を変換する
     Convert(convert::ConvertArgs),
+    /// CSV のエンコーディング・行数などの情報を表示する
+    Info(info::InfoArgs),
 }
 
 impl Cli {
@@ -62,6 +65,7 @@ impl Cli {
             Command::Flag(args) => flag::run(args),
             Command::Extract(args) => extract::run(args),
             Command::Convert(args) => convert::run(args),
+            Command::Info(args) => info::run(args),
         }
     }
 }
