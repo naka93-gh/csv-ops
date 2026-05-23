@@ -3,6 +3,7 @@
 use super::*;
 use crate::column::ColumnRef;
 use crate::replace::rule::RuleId;
+use crate::stats::Stats;
 
 /// 単純置換ルールを作る (from をエスケープしてマッチャ化)
 fn simple(index: usize, from: &str, to: &str) -> CompiledRule {
@@ -43,7 +44,7 @@ fn rec(fields: &[&str]) -> StringRecord {
 /// ルール列から ReplaceTransform を組み立てる (統計は自動初期化)
 fn transform(rules: Vec<CompiledRule>, columns: ColumnTarget) -> ReplaceTransform {
     let ids: Vec<String> = rules.iter().map(|r| r.id().to_string()).collect();
-    ReplaceTransform::new(rules, columns, ReplaceStats::new(ids))
+    ReplaceTransform::new(rules, columns, Stats::with_rule_ids(ids))
 }
 
 /// 単純置換が対象セルに適用される
@@ -55,7 +56,7 @@ fn applies_simple_replacement() {
     t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "open");
     assert_eq!(&r[1], "データ");
-    assert_eq!(t.stats.per_rule[0].matches, 1);
+    assert_eq!(t.stats.per_rule[0].matches, Some(1));
 }
 
 /// 正規表現置換が適用される
@@ -86,7 +87,7 @@ fn no_match_leaves_unchanged() {
     let mut r = rec(&["abc", "def"]);
     t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "abc");
-    assert_eq!(t.stats.rows_modified, 0);
+    assert_eq!(t.stats.rows_changed, 0);
 }
 
 /// 範囲が重なるルールは動的衝突エラーになる
@@ -127,7 +128,7 @@ fn multiple_matches_in_cell() {
     let mut r = rec(&["ababab"]);
     t.on_record(&mut r, 1).unwrap();
     assert_eq!(&r[0], "XXX");
-    assert_eq!(t.stats.per_rule[0].matches, 3);
+    assert_eq!(t.stats.per_rule[0].matches, Some(3));
 }
 
 /// 連鎖なし: ルール 0 の置換結果はルール 1 の評価対象にならない

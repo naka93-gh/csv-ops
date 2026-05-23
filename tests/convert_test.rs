@@ -294,5 +294,5 @@ fn convert_row_count() {
         .arg(&output)
         .assert()
         .success()
-        .stdout(predicates::str::contains("変換行数: 3"));
+        .stdout(predicates::str::contains("処理行数: 3"));
 }

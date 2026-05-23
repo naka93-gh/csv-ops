@@ -1,6 +1,5 @@
 pub(crate) mod config;
 pub(crate) mod rule;
-pub mod stats;
 pub(crate) mod transform;
 
 use std::path::PathBuf;
@@ -9,9 +8,9 @@ use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
+use crate::stats::Stats;
 
 use config::ExtractConfig;
-use stats::ExtractStats;
 use transform::ExtractTransform;
 
 /// ルールの指定方法
@@ -51,7 +50,7 @@ pub struct ExtractRequest {
 }
 
 /// extract サブコマンドのエントリポイント
-pub fn run(request: ExtractRequest) -> Result<ExtractStats, CsvOpsError> {
+pub fn run(request: ExtractRequest) -> Result<Stats, CsvOpsError> {
     let ExtractRequest {
         rules,
         input,

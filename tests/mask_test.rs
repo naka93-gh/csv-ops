@@ -296,9 +296,9 @@ fn stats_text_reports_counts() {
         .args(["-c", "a"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("処理行数:     2").and(
-            // 空セルの行はマスクされないのでマスク行数は 1
-            predicate::str::contains("マスク行数:   1"),
+        .stdout(predicate::str::contains("処理行数: 2").and(
+            // 空セルの行はマスクされないのでヒット行数は 1
+            predicate::str::contains("ヒット行数: 1"),
         ));
 }
 
@@ -317,7 +317,7 @@ fn stats_json_format() {
         .args(["-c", "a", "--stats-format", "json"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"cells_masked\": 1"));
+        .stdout(predicate::str::contains("\"changes_total\": 1"));
 }
 
 #[test]

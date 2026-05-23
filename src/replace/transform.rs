@@ -5,10 +5,10 @@ use csv::StringRecord;
 use crate::column::resolve_indices;
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
+use crate::stats::Stats;
 
 use super::ColumnTarget;
 use super::rule::CompiledRule;
-use super::stats::ReplaceStats;
 
 /// 解決済みの置換対象列
 /// init で ColumnTarget (列名 / 列番号) をインデックスへ解決した結果
@@ -40,11 +40,11 @@ pub(crate) struct ReplaceTransform {
     /// ヘッダー (エラーメッセージのカラム名表示に使う)
     headers: Option<StringRecord>,
     /// 処理統計
-    pub stats: ReplaceStats,
+    pub stats: Stats,
 }
 
 impl ReplaceTransform {
-    pub fn new(rules: Vec<CompiledRule>, columns: ColumnTarget, stats: ReplaceStats) -> Self {
+    pub fn new(rules: Vec<CompiledRule>, columns: ColumnTarget, stats: Stats) -> Self {
         Self {
             rules,
             columns,
@@ -170,16 +170,16 @@ impl RecordTransform for ReplaceTransform {
 
         // 統計更新
         if !row_matches.is_empty() {
-            self.stats.rows_modified += 1;
+            self.stats.rows_changed += 1;
         }
-        self.stats.total_replacements += row_matches.len() as u64;
+        self.stats.changes_total += row_matches.len() as u64;
 
         // per_rule 集計:
         // - matches       = マッチ回数なので各マッチごとにカウント
         // - rows_affected = 影響行数なのでこの行で 1 回以上マッチしたルールを 1 回だけカウント
         let mut affected: HashSet<usize> = HashSet::new();
         for &idx in &row_matches {
-            self.stats.per_rule[idx].matches += 1;
+            *self.stats.per_rule[idx].matches.get_or_insert(0) += 1;
             affected.insert(idx);
         }
         for idx in affected {

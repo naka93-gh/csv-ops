@@ -1,7 +1,6 @@
 pub(crate) mod collision;
 pub(crate) mod config;
 pub(crate) mod rule;
-pub mod stats;
 pub(crate) mod transform;
 
 use std::path::PathBuf;
@@ -10,10 +9,10 @@ use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
+use crate::stats::Stats;
 
 use collision::detect_static_collisions;
 use config::ReplaceConfig;
-use stats::ReplaceStats;
 use transform::ReplaceTransform;
 
 /// ルールの指定方法
@@ -63,7 +62,7 @@ pub struct ReplaceRequest {
 }
 
 /// replace サブコマンドのエントリポイント
-pub fn run(request: ReplaceRequest) -> Result<ReplaceStats, CsvOpsError> {
+pub fn run(request: ReplaceRequest) -> Result<Stats, CsvOpsError> {
     let ReplaceRequest {
         rules,
         input,
@@ -98,7 +97,7 @@ pub fn run(request: ReplaceRequest) -> Result<ReplaceStats, CsvOpsError> {
     let output_encoding = resolve_encoding(&output_encoding)?;
 
     // 置換処理と統計集計は ReplaceTransform が担い、パイプラインが I/O を担う
-    let mut transform = ReplaceTransform::new(compiled, columns, ReplaceStats::new(rule_ids));
+    let mut transform = ReplaceTransform::new(compiled, columns, Stats::with_rule_ids(rule_ids));
     let opts = PipelineOptions {
         input,
         output,

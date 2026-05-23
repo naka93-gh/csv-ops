@@ -5,6 +5,7 @@ use csv::StringRecord;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, RecordTransform, run_pipeline};
+use crate::stats::Stats;
 
 /// convert::run に渡す設定一式
 pub struct ConvertRequest {
@@ -20,13 +21,8 @@ pub struct ConvertRequest {
     pub input_delimiter: u8,
     /// 出力区切り文字
     pub output_delimiter: u8,
-}
-
-/// convert 実行の統計
-#[derive(Debug)]
-pub struct ConvertStats {
-    /// 変換した行数
-    pub rows: u64,
+    /// dry-run (true なら出力ファイルへ書き込まず、行数のみ集計する)
+    pub dry_run: bool,
 }
 
 /// convert は内容を変えず素通しするだけなので、行を書き換えない transform を使う
@@ -47,7 +43,8 @@ impl RecordTransform for PassThrough {
 
 /// convert サブコマンドのエントリポイント
 /// エンコーディングと区切り文字だけを変換して素通しする
-pub fn run(request: ConvertRequest) -> Result<ConvertStats, CsvOpsError> {
+/// ヒット概念がないため rows_changed / changes_total は 0 のまま返す
+pub fn run(request: ConvertRequest) -> Result<Stats, CsvOpsError> {
     // 入力エンコーディングは auto 指定ならファイル先頭から推定する
     let input_encoding = resolve_input_encoding(&request.input_encoding, &request.input)?;
     let output_encoding = resolve_encoding(&request.output_encoding)?;
@@ -61,8 +58,11 @@ pub fn run(request: ConvertRequest) -> Result<ConvertStats, CsvOpsError> {
         output_delimiter: request.output_delimiter,
         // convert は全行を等価に素通しするのでヘッダー概念を持たない
         has_headers: false,
-        dry_run: false,
+        dry_run: request.dry_run,
     };
     let rows = run_pipeline(&mut PassThrough, &opts)?;
-    Ok(ConvertStats { rows })
+    Ok(Stats {
+        rows_processed: rows,
+        ..Default::default()
+    })
 }

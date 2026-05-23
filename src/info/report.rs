@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use crate::StatsReport;
 use crate::io::LineEnding;
 
 /// info の解析結果
@@ -29,33 +30,6 @@ pub struct InfoReport {
 }
 
 impl InfoReport {
-    /// テキスト形式でフォーマットする
-    pub fn to_text(&self) -> String {
-        let mut out = String::new();
-        out.push_str(&format!("File:        {}\n", self.file));
-        out.push_str(&format!(
-            "Size:        {} ({} bytes)\n",
-            human_size(self.size_bytes),
-            group_digits(self.size_bytes)
-        ));
-        out.push_str(&format!("Encoding:    {}\n", self.encoding_text()));
-        out.push_str(&format!("Delimiter:   {}\n", self.delimiter));
-        out.push_str(&format!("Quote:       {}\n", self.quote));
-        out.push_str(&format!("Line ending: {}\n", self.line_ending.text()));
-        out.push_str(&format!(
-            "Rows:        {} (excluding header)\n",
-            group_digits(self.rows)
-        ));
-        out.push_str(&format!("Columns:     {}\n", self.columns));
-        out.push_str(&format!("Headers:     {}", self.headers.join(", ")));
-        out
-    }
-
-    /// JSON 形式でフォーマットする
-    pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self).expect("InfoReport は常にシリアライズできる")
-    }
-
     /// エンコーディングのテキスト表示 (UTF-8 は BOM 有無を含める)
     fn encoding_text(&self) -> String {
         match self.encoding.as_str() {
@@ -64,6 +38,34 @@ impl InfoReport {
             "euc-jp" => "EUC-JP".to_string(),
             other => other.to_string(),
         }
+    }
+}
+
+impl StatsReport for InfoReport {
+    fn to_text(&self) -> String {
+        let lines = vec![
+            format!("File:        {}", self.file),
+            format!(
+                "Size:        {} ({} bytes)",
+                human_size(self.size_bytes),
+                group_digits(self.size_bytes)
+            ),
+            format!("Encoding:    {}", self.encoding_text()),
+            format!("Delimiter:   {}", self.delimiter),
+            format!("Quote:       {}", self.quote),
+            format!("Line ending: {}", self.line_ending.text()),
+            format!(
+                "Rows:        {} (excluding header)",
+                group_digits(self.rows)
+            ),
+            format!("Columns:     {}", self.columns),
+            format!("Headers:     {}", self.headers.join(", ")),
+        ];
+        lines.join("\n")
+    }
+
+    fn to_json(&self) -> String {
+        serde_json::to_string_pretty(self).expect("InfoReport は常にシリアライズできる")
     }
 }
 

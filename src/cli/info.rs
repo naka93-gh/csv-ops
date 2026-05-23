@@ -5,7 +5,7 @@ use std::process::ExitCode;
 use clap::Args;
 use csv_ops::info::InfoRequest;
 
-use super::parse_delimiter_alias;
+use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops info` の引数
 #[derive(Args, Debug)]
@@ -45,12 +45,6 @@ pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let report = csv_ops::info::run(request)?;
-
-    let formatted = match args.format.as_str() {
-        "json" => report.to_json(),
-        "text" => report.to_text(),
-        other => return Err(format!("不明な出力形式: {} (text / json)", other).into()),
-    };
-    println!("{}", formatted);
+    emit_report(&report, &args.format, None)?;
     Ok(ExitCode::SUCCESS)
 }

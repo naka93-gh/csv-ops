@@ -9,7 +9,7 @@ use clap::Args;
 use csv_ops::ColumnRef;
 use csv_ops::replace::{ColumnTarget, ReplaceRequest, RuleSource};
 
-use super::parse_delimiter_alias;
+use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops replace` の引数
 #[derive(Args, Debug)]
@@ -133,18 +133,6 @@ pub(crate) fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = csv_ops::replace::run(request)?;
-
-    // 統計を指定形式でフォーマット
-    let formatted = match args.stats_format.as_str() {
-        "json" => stats.to_json(),
-        "text" => stats.to_text(),
-        other => return Err(format!("不明な統計形式: {} (text / json)", other).into()),
-    };
-
-    // --stats-file 指定ならファイルへ、なければ標準出力へ
-    match args.stats_file {
-        Some(path) => std::fs::write(&path, formatted)?,
-        None => println!("{}", formatted),
-    }
+    emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }

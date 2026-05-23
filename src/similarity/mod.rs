@@ -1,7 +1,6 @@
 pub(crate) mod config;
 pub(crate) mod dict;
 pub(crate) mod rule;
-pub mod stats;
 pub(crate) mod transform;
 
 use std::path::PathBuf;
@@ -10,9 +9,9 @@ use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
+use crate::stats::Stats;
 
 use config::SimilarityConfig;
-use stats::SimilarityStats;
 use transform::SimilarityTransform;
 
 pub use config::DEFAULT_THRESHOLD;
@@ -58,7 +57,7 @@ pub struct SimilarityRequest {
 }
 
 /// similarity サブコマンドのエントリポイント
-pub fn run(request: SimilarityRequest) -> Result<SimilarityStats, CsvOpsError> {
+pub fn run(request: SimilarityRequest) -> Result<Stats, CsvOpsError> {
     let SimilarityRequest {
         rules,
         input,
