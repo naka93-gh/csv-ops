@@ -50,4 +50,3 @@ fn detect_delimiter_chooses_stable_columns_across_lines() {
 fn detect_delimiter_handles_empty_input() {
     assert_eq!(detect_delimiter(""), b',');
 }
-

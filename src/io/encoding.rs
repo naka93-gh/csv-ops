@@ -9,6 +9,10 @@ use crate::error::{CsvOpsError, EncodingError};
 /// auto 判定でファイル先頭を読むバイト数
 const DETECT_PREFIX_LEN: usize = 65536;
 
+/// 先頭が全 ASCII だった場合、追加で末尾から読むバイト数
+/// 「ASCII ヘッダ + 後半 SJIS」の業務 CSV パターンで誤判定するのを防ぐためのフォールバック
+const DETECT_TAIL_LEN: usize = 65536;
+
 /// 設定文字列からエンコーディングを解決する
 /// サポート: "utf-8" / "shift_jis" / "euc-jp"
 pub fn resolve_encoding(name: &str) -> Result<&'static Encoding, EncodingError> {
@@ -21,9 +25,8 @@ pub fn resolve_encoding(name: &str) -> Result<&'static Encoding, EncodingError> 
 }
 
 /// 入力エンコーディングを解決する
-/// "auto" ならファイル先頭を読んで推定し、それ以外は resolve_encoding と同じ。
-/// auto 判定は先頭 64KB のみを見るため、先頭が ASCII のみで後半に
-/// 非 UTF-8 バイトが現れるファイルでは取り違える場合がある (best-effort)。
+/// "auto" ならファイル先頭を読んで推定し、それ以外は resolve_encoding と同じ
+/// auto 判定はサンプルベースなので、サンプルされた範囲外に判定材料がある場合は取り違える可能性がある (best-effort)
 pub fn resolve_input_encoding(name: &str, path: &Path) -> Result<&'static Encoding, CsvOpsError> {
     if name == "auto" {
         detect_file_encoding(path)
@@ -33,11 +36,35 @@ pub fn resolve_input_encoding(name: &str, path: &Path) -> Result<&'static Encodi
 }
 
 /// 入力ファイル先頭を読んでエンコーディングを推定する
+/// 先頭サンプルが全 ASCII だった場合のみ、末尾サンプルも追加で読んで判定する
+/// (「ASCII ヘッダ + 後半 SJIS」の業務 CSV パターンで誤判定するのを防ぐ)
 fn detect_file_encoding(path: &Path) -> Result<&'static Encoding, CsvOpsError> {
     let mut file = File::open(path)?;
-    let mut buf = vec![0u8; DETECT_PREFIX_LEN];
-    let n = file.read(&mut buf)?;
-    Ok(detect_encoding(&buf[..n]).0)
+    let mut sample = vec![0u8; DETECT_PREFIX_LEN];
+    let n = file.read(&mut sample)?;
+    sample.truncate(n);
+
+    if is_all_ascii(&sample) {
+        let file_len = file.metadata()?.len();
+        // 末尾が prefix を超える範囲にあるときだけ追加で読む
+        if file_len > n as u64 {
+            use std::io::{Seek, SeekFrom};
+            // prefix と被らない位置から末尾の DETECT_TAIL_LEN バイトを読む
+            let tail_start = file_len
+                .saturating_sub(DETECT_TAIL_LEN as u64)
+                .max(n as u64);
+            file.seek(SeekFrom::Start(tail_start))?;
+            let mut tail = vec![0u8; DETECT_TAIL_LEN];
+            let m = file.read(&mut tail)?;
+            sample.extend_from_slice(&tail[..m]);
+        }
+    }
+    Ok(detect_encoding(&sample).0)
+}
+
+/// バイト列が ASCII 範囲 (0x00-0x7F) のみで構成されているか
+fn is_all_ascii(bytes: &[u8]) -> bool {
+    bytes.iter().all(|&b| b < 0x80)
 }
 
 /// バイト列からエンコーディングを推定する
@@ -145,6 +172,40 @@ mod tests {
         std::fs::write(&path, &bytes).unwrap();
         let enc = resolve_input_encoding("auto", &path).unwrap();
         assert_eq!(enc, encoding_rs::SHIFT_JIS);
+    }
+
+    #[test]
+    fn resolve_input_encoding_auto_handles_ascii_header_then_sjis_body() {
+        // 業務 CSV でよくある「ASCII ヘッダ + 後半 SJIS 本文」パターン
+        // 先頭サンプル (64KB) が全 ASCII でも、末尾サンプルで SJIS と判定できる
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("ascii_then_sjis.csv");
+        // ASCII ヘッダ + 大量の ASCII データ行で 64KB を超え、最後に SJIS 本文を入れる
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"id,name,email\n");
+        for i in 0..6000 {
+            bytes.extend_from_slice(format!("{},user{},user{}@example.com\n", i, i, i).as_bytes());
+        }
+        let (sjis_tail, _, _) = encoding_rs::SHIFT_JIS.encode("9999,田中太郎,tanaka@example.com\n");
+        bytes.extend_from_slice(&sjis_tail);
+        assert!(
+            bytes.len() > super::DETECT_PREFIX_LEN,
+            "テスト前提として 64KB を超える長さで作る必要がある"
+        );
+        std::fs::write(&path, &bytes).unwrap();
+
+        let enc = resolve_input_encoding("auto", &path).unwrap();
+        assert_eq!(enc, encoding_rs::SHIFT_JIS);
+    }
+
+    #[test]
+    fn resolve_input_encoding_auto_keeps_utf8_for_all_ascii_file() {
+        // 全 ASCII のファイルは UTF-8 とみなされる (既存挙動の維持)
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("all_ascii.csv");
+        std::fs::write(&path, "id,name\n1,alice\n2,bob\n").unwrap();
+        let enc = resolve_input_encoding("auto", &path).unwrap();
+        assert_eq!(enc, encoding_rs::UTF_8);
     }
 
     #[test]
