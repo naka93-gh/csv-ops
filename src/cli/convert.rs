@@ -5,7 +5,7 @@ use std::process::ExitCode;
 use clap::Args;
 use csv_ops::convert::ConvertRequest;
 
-use super::parse_delimiter_alias;
+use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops convert` の引数
 #[derive(Args, Debug)]
@@ -33,6 +33,18 @@ pub(crate) struct ConvertArgs {
     /// 出力区切り文字 (comma / tab / pipe / semicolon)
     #[arg(long, default_value = "comma")]
     pub output_delimiter: String,
+
+    /// 出力ファイルへ書き込まず、統計のみ集計する
+    #[arg(long)]
+    pub dry_run: bool,
+
+    /// 統計の出力形式 (text / json)
+    #[arg(long, value_name = "FORMAT", default_value = "text")]
+    pub stats_format: String,
+
+    /// 統計の出力先ファイル (未指定なら標準出力)
+    #[arg(long, value_name = "PATH")]
+    pub stats_file: Option<PathBuf>,
 }
 
 /// convert サブコマンドのエントリポイント
@@ -44,9 +56,10 @@ pub(crate) fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
         output_encoding: args.output_encoding,
         input_delimiter: parse_delimiter_alias(&args.input_delimiter)?,
         output_delimiter: parse_delimiter_alias(&args.output_delimiter)?,
+        dry_run: args.dry_run,
     };
 
     let stats = csv_ops::convert::run(request)?;
-    println!("変換行数: {}", stats.rows);
+    emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }
