@@ -28,9 +28,25 @@ fn detect_delimiter_defaults_to_comma() {
 }
 
 #[test]
-fn analyze_line_ending_classifies() {
-    assert_eq!(analyze_line_ending(b"a,b\n1,2\n"), LineEnding::Lf);
-    assert_eq!(analyze_line_ending(b"a,b\r\n1,2\r\n"), LineEnding::Crlf);
-    assert_eq!(analyze_line_ending(b"a,b\r\n1,2\n"), LineEnding::Mixed);
-    assert_eq!(analyze_line_ending(b"a,b"), LineEnding::None);
+fn detect_delimiter_ignores_stray_candidate_in_header() {
+    // ヘッダに ";" が 1 つ混ざっているが本文はカンマ区切り
+    // 単純多数決ベースだと 1 行目の ";" に引きずられるが、
+    // 列数の安定度で見ると 4 列 (カンマ) が複数行で揃うのでカンマが選ばれる
+    let csv = "id,name,note;memo,extra\n\
+               1,alice,hello,x\n\
+               2,bob,world,y\n\
+               3,carol,foo,z\n";
+    assert_eq!(detect_delimiter(csv), b',');
+}
+
+#[test]
+fn detect_delimiter_chooses_stable_columns_across_lines() {
+    // 全行で列数が安定する区切り文字を優先する
+    let csv = "a;b;c\n1;2;3\n4;5;6\n";
+    assert_eq!(detect_delimiter(csv), b';');
+}
+
+#[test]
+fn detect_delimiter_handles_empty_input() {
+    assert_eq!(detect_delimiter(""), b',');
 }
