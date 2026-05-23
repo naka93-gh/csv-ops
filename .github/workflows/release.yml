@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'   # v0.1.0-rc.1 などの pre-release タグ
+
+# GitHub Release を作るために contents: write が要る
+permissions:
+  contents: write
+
+jobs:
+  # CHANGELOG.md の該当バージョンのセクションを抜き出して GitHub Release を作る
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          changelog: CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # 各ターゲットでビルドしてバイナリを Release に添付する
+  upload-assets:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: csv-ops
+          target: ${{ matrix.target }}
+          # Unix 系は tar.gz、Windows は zip でアーカイブする
+          tar: unix
+          zip: windows
+          # アーカイブに同梱するファイル (CHANGELOG とライセンスはバイナリ単体配布で見られないため)
+          include: README.md,CHANGELOG.md,LICENSE-MIT,LICENSE-APACHE
+          token: ${{ secrets.GITHUB_TOKEN }}
