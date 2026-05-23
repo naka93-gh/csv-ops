@@ -24,7 +24,7 @@ out_col = "num"
     t.on_record(&mut record, 1).unwrap();
     assert_eq!(record.len(), 2);
     assert_eq!(&record[1], "123");
-    assert_eq!(t.stats.per_rule[0].extracted_rows, 1);
+    assert_eq!(t.stats.per_rule[0].rows_affected, 1);
 }
 
 #[test]
@@ -58,7 +58,7 @@ out_col = "num"
     let mut record = rec(&["abcdef"]);
     t.on_record(&mut record, 1).unwrap();
     assert_eq!(&record[1], "");
-    assert_eq!(t.stats.per_rule[0].extracted_rows, 0);
+    assert_eq!(t.stats.per_rule[0].rows_affected, 0);
 }
 
 #[test]

@@ -1,5 +1,4 @@
 pub(crate) mod config;
-pub mod stats;
 pub(crate) mod transform;
 
 use std::path::PathBuf;
@@ -8,9 +7,9 @@ use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
+use crate::stats::Stats;
 
 use config::MaskConfig;
-use stats::MaskStats;
 use transform::MaskTransform;
 
 /// マスク対象の列指定の供給元
@@ -47,7 +46,7 @@ pub struct MaskRequest {
 
 /// mask サブコマンドのエントリポイント
 /// 指定列を文字数を保ったままマスクする
-pub fn run(request: MaskRequest) -> Result<MaskStats, CsvOpsError> {
+pub fn run(request: MaskRequest) -> Result<Stats, CsvOpsError> {
     let MaskRequest {
         source,
         input,

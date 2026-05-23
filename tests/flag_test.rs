@@ -205,7 +205,7 @@ fn flag_json_stats() {
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_processed\": 2"))
-        .stdout(predicates::str::contains("\"matched_rows\": 1"));
+        .stdout(predicates::str::contains("\"rows_affected\": 1"));
 }
 
 #[test]

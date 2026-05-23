@@ -1,6 +1,5 @@
 pub(crate) mod config;
 pub(crate) mod rule;
-pub mod stats;
 pub(crate) mod transform;
 
 use std::path::PathBuf;
@@ -9,9 +8,9 @@ use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
 use crate::io::{resolve_encoding, resolve_input_encoding};
 use crate::pipeline::{PipelineOptions, run_pipeline};
+use crate::stats::Stats;
 
 use config::FlagConfig;
-use stats::FlagStats;
 use transform::FlagTransform;
 
 /// ルールの指定方法
@@ -49,7 +48,7 @@ pub struct FlagRequest {
 }
 
 /// flag サブコマンドのエントリポイント
-pub fn run(request: FlagRequest) -> Result<FlagStats, CsvOpsError> {
+pub fn run(request: FlagRequest) -> Result<Stats, CsvOpsError> {
     let FlagRequest {
         rules,
         input,

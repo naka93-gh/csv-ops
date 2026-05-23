@@ -3,8 +3,7 @@ use csv::StringRecord;
 use crate::column::{ColumnRef, resolve_indices};
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
-
-use super::stats::MaskStats;
+use crate::stats::Stats;
 
 /// マスク処理本体
 /// 指定列の各セルを、文字数を保ったまま mask_char で塗り潰す
@@ -16,7 +15,7 @@ pub(crate) struct MaskTransform {
     /// 解決済みの対象列インデックス
     indices: Vec<usize>,
     /// 処理統計
-    pub stats: MaskStats,
+    pub stats: Stats,
 }
 
 impl MaskTransform {
@@ -25,7 +24,7 @@ impl MaskTransform {
             columns,
             mask_char,
             indices: Vec::new(),
-            stats: MaskStats::default(),
+            stats: Stats::default(),
         }
     }
 }
@@ -61,7 +60,7 @@ impl RecordTransform for MaskTransform {
             if self.indices.contains(&i) && !field.is_empty() {
                 // chars().count() で塗り潰す: バイト長だとマルチバイトで桁数が狂う
                 new_fields.push(self.mask_char.to_string().repeat(field.chars().count()));
-                self.stats.cells_masked += 1;
+                self.stats.changes_total += 1;
                 masked_any = true;
             } else {
                 new_fields.push(field.to_string());
@@ -69,7 +68,7 @@ impl RecordTransform for MaskTransform {
         }
         *record = StringRecord::from(new_fields);
         if masked_any {
-            self.stats.rows_masked += 1;
+            self.stats.rows_changed += 1;
         }
         Ok(())
     }

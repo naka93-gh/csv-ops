@@ -197,7 +197,7 @@ fn similarity_json_stats() {
         .args(["--stats-format", "json"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("\"matched_rows\""));
+        .stdout(predicates::str::contains("\"rows_affected\""));
 }
 
 #[test]

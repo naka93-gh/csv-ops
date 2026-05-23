@@ -234,7 +234,7 @@ fn extract_json_stats() {
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_processed\": 2"))
-        .stdout(predicates::str::contains("\"extracted_rows\": 1"));
+        .stdout(predicates::str::contains("\"rows_affected\": 1"));
 }
 
 #[test]

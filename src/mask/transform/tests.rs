@@ -12,8 +12,8 @@ fn masks_target_column_by_name() {
     let mut record = rec(&["foo", "bar", "baz"]);
     t.on_record(&mut record, 1).unwrap();
     assert_eq!(record, rec(&["foo", "***", "baz"]));
-    assert_eq!(t.stats.cells_masked, 1);
-    assert_eq!(t.stats.rows_masked, 1);
+    assert_eq!(t.stats.changes_total, 1);
+    assert_eq!(t.stats.rows_changed, 1);
 }
 
 #[test]
@@ -51,8 +51,8 @@ fn empty_cell_stays_empty_and_is_not_counted() {
     let mut record = rec(&[""]);
     t.on_record(&mut record, 1).unwrap();
     assert_eq!(record.get(0).unwrap(), "");
-    assert_eq!(t.stats.cells_masked, 0);
-    assert_eq!(t.stats.rows_masked, 0);
+    assert_eq!(t.stats.changes_total, 0);
+    assert_eq!(t.stats.rows_changed, 0);
 }
 
 #[test]
