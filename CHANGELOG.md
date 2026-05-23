@@ -6,7 +6,7 @@ csv-ops の変更履歴。
 バージョニングは [Semantic Versioning](https://semver.org/lang/ja/) に従う
 （v0.x 期間はマイナーで機能追加・破壊的変更の双方を許容する）。
 
-## [Unreleased]
+## [0.1.0] - 2026-05-23
 
 ### Added
 
@@ -23,4 +23,4 @@ csv-ops の変更履歴。
 - GitHub Actions による CI（fmt / clippy / test / build）
 - Dependabot による依存更新
 
-[Unreleased]: https://github.com/naka93-gh/csv-ops/commits/main
+[0.1.0]: https://github.com/naka93-gh/csv-ops/releases/tag/v0.1.0
