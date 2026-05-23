@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 /// csv-ops の最上位エラー型
@@ -22,6 +24,9 @@ pub enum CsvOpsError {
 
     #[error(transparent)]
     Transform(#[from] TransformError),
+
+    #[error(transparent)]
+    Dict(#[from] DictError),
 }
 
 impl From<csv::Error> for CsvOpsError {
@@ -94,4 +99,20 @@ pub enum TransformError {
 
     #[error("出力カラム名 {name} は既存カラムまたは他ルールと衝突しています")]
     OutputColumnConflict { name: String },
+}
+
+/// 辞書関連エラー
+#[derive(Debug, Error)]
+pub enum DictError {
+    #[error("辞書にエントリがありません: {0}")]
+    Empty(PathBuf),
+
+    #[error("辞書 canonical の重複: {0}")]
+    DuplicateCanonical(String),
+
+    #[error("辞書 alias \"{alias}\" が複数の canonical に割り当てられています: {}", canonicals.join(", "))]
+    DuplicateAlias {
+        alias: String,
+        canonicals: Vec<String>,
+    },
 }

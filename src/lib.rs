@@ -8,7 +8,9 @@ mod io;
 pub mod mask;
 mod pipeline;
 pub mod replace;
+pub mod similarity;
+mod text;
 
 pub use column::ColumnRef;
-pub use error::{ConfigError, CsvOpsError, EncodingError, TransformError};
+pub use error::{ConfigError, CsvOpsError, DictError, EncodingError, TransformError};
 pub use io::{resolve_encoding, resolve_input_encoding};

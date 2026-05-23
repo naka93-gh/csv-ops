@@ -48,10 +48,19 @@ csv-ops flag -i in.csv -o out.csv -c city --pattern "東京|大阪" --out-col ma
 csv-ops extract -i in.csv -o out.csv -c memo --pattern "\d{2,4}-\d{4}-\d{4}" --out-col phone
 ```
 
+### similarity — 辞書とのベストマッチでカラムを追加
+
+```
+csv-ops similarity -i in.csv -o out.csv -c city --dict city-dict.csv
+```
+
 ### convert — エンコーディング・区切り文字の変換
 
 ```
 csv-ops convert -i sjis.csv -o utf8.csv --input-encoding shift_jis
+
+# 入力エンコーディングを自動判定する場合
+csv-ops convert -i unknown.csv -o utf8.csv --input-encoding auto
 ```
 
 ### info — CSV の情報表示
@@ -62,7 +71,7 @@ csv-ops info -i data.csv
 
 ## ドキュメント
 
-- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag / extract / convert / info の詳細
+- [サブコマンド別の使い方](docs/commands/) — mask / replace / flag / extract / similarity / convert / info の詳細
 
 ## ライセンス
 

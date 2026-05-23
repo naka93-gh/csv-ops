@@ -12,6 +12,7 @@ pub(crate) mod flag;
 pub(crate) mod info;
 pub(crate) mod mask;
 pub(crate) mod replace;
+pub(crate) mod similarity;
 
 /// 区切り文字エイリアスを 1 バイトに変換する
 /// comma / tab / pipe / semicolon のいずれかを受け付ける
@@ -51,6 +52,8 @@ pub(crate) enum Command {
     Flag(flag::FlagArgs),
     /// 指定カラムからパターンマッチした文字列を抽出して列を追加する
     Extract(extract::ExtractArgs),
+    /// 指定カラムを辞書とベストマッチして列を追加する
+    Similarity(similarity::SimilarityArgs),
     /// エンコーディングと区切り文字を変換する
     Convert(convert::ConvertArgs),
     /// CSV のエンコーディング・行数などの情報を表示する
@@ -64,6 +67,7 @@ impl Cli {
             Command::Replace(args) => replace::run(args),
             Command::Flag(args) => flag::run(args),
             Command::Extract(args) => extract::run(args),
+            Command::Similarity(args) => similarity::run(args),
             Command::Convert(args) => convert::run(args),
             Command::Info(args) => info::run(args),
         }
