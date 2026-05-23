@@ -97,22 +97,58 @@ fn delimiter_display(d: u8) -> String {
     }
 }
 
-/// ヘッダー行 (最初の行) で候補区切り文字の出現数を数え、最多のものを返す
-/// 候補は comma / tab / pipe / semicolon。すべて 0 ならカンマ
-/// 同数のときは候補の並び順 (カンマ優先) で先勝ち
+/// 先頭 10 行で各候補区切り文字の列数を試算し、最も安定する候補を返す
+/// 各候補について「列数の最頻値」と「最頻値が現れた行数」を取り、
+/// `(最頻列数の出現行数 × 1000 + 最頻列数)` をスコアとして最大の候補を選ぶ。
+/// 列数が 1 にしかならない候補は区切り文字として機能していないので除外。
+/// すべての候補が機能しなければデフォルトでカンマ。
+/// 同点は候補の並び順 (カンマ → タブ → パイプ → セミコロン) で先勝ち。
 fn detect_delimiter(text: &str) -> u8 {
-    let first_line = text.lines().next().unwrap_or("");
     const CANDIDATES: [u8; 4] = [b',', b'\t', b'|', b';'];
+    const SAMPLE_LINES: usize = 10;
+    let lines: Vec<&str> = text.lines().take(SAMPLE_LINES).collect();
+    if lines.is_empty() {
+        return b',';
+    }
     let mut best = b',';
-    let mut best_count = 0usize;
+    let mut best_score: i64 = -1;
     for &d in &CANDIDATES {
-        let count = first_line.bytes().filter(|&b| b == d).count();
-        if count > best_count {
-            best_count = count;
+        // 各行の列数 = 区切り文字の出現回数 + 1 (簡易にクォート内も含めてカウント)
+        let cols: Vec<usize> = lines
+            .iter()
+            .map(|line| line.bytes().filter(|&b| b == d).count() + 1)
+            .collect();
+        let (mode, mode_count) = most_common(&cols);
+        // 区切り文字として機能していない (1 列にしかならない) ものはスキップ
+        if mode <= 1 {
+            continue;
+        }
+        // 安定した列数を持つ行が多いほど良く、同点なら列数が多い候補を優先
+        let score = (mode_count as i64) * 1000 + mode as i64;
+        if score > best_score {
+            best_score = score;
             best = d;
         }
     }
     best
+}
+
+/// 値の列の中で最も頻出する値と、その出現回数を返す
+/// 同点は最初に現れた値が勝つ。空入力なら (1, 0) を返す
+fn most_common(values: &[usize]) -> (usize, usize) {
+    let mut counts: Vec<(usize, usize)> = Vec::new();
+    for &v in values {
+        if let Some(c) = counts.iter_mut().find(|(k, _)| *k == v) {
+            c.1 += 1;
+        } else {
+            counts.push((v, 1));
+        }
+    }
+    // 同点は最初に挿入された (= 最初に現れた) ものを残すため、安定な max を取る
+    counts
+        .into_iter()
+        .reduce(|a, b| if b.1 > a.1 { b } else { a })
+        .unwrap_or((1, 0))
 }
 
 #[cfg(test)]
