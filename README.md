@@ -2,8 +2,19 @@
 
 [![CI](https://github.com/naka93-gh/csv-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/naka93-gh/csv-ops/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#ライセンス)
+[![Rust 2024](https://img.shields.io/badge/rust-2024-orange.svg)](https://blog.rust-lang.org/)
 
 CSV 処理用の Rust 製 CLI ツール。
+Shift_JIS や表記揺れをどうにかするために作っています。
+
+## 特徴
+
+- Shift_JIS / EUC-JP の CSV をそのまま読み書きできる（指定 or 自動判定）
+- 業務でよくやる処理を 7 コマンドにまとめてある — マスキング・置換・フラグ列追加・抽出・辞書マッチ・フォーマット変換・情報表示
+- CLI 引数でも TOML 設定ファイルでも書ける。複数ルールは設定ファイルにまとめると楽
+- 表記揺れを類似度マッチで吸収できる（4 種のアルゴリズム + 日本語正規化）
+- 大きい CSV もストリーミングで処理。書き途中で死んでも壊れたファイルが残らない（アトミック出力）
+- リリースバイナリは約 2 MB、依存も小さめ
 
 ## インストール
 
