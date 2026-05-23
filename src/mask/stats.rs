@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::StatsReport;
+
 /// mask 実行の統計
 #[derive(Debug, Default, Serialize)]
 pub struct MaskStats {
@@ -11,17 +13,15 @@ pub struct MaskStats {
     pub cells_masked: u64,
 }
 
-impl MaskStats {
-    /// テキスト形式でフォーマットする
-    pub fn to_text(&self) -> String {
+impl StatsReport for MaskStats {
+    fn to_text(&self) -> String {
         format!(
             "処理行数:     {}\nマスク行数:   {}\nマスクセル数: {}",
             self.rows_processed, self.rows_masked, self.cells_masked
         )
     }
 
-    /// JSON 形式でフォーマットする
-    pub fn to_json(&self) -> String {
+    fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).expect("MaskStats は常にシリアライズできる")
     }
 }

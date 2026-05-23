@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::StatsReport;
+
 /// extract 実行の統計
 #[derive(Debug, Serialize)]
 pub struct ExtractStats {
@@ -34,22 +36,21 @@ impl ExtractStats {
             per_rule,
         }
     }
+}
 
-    /// テキスト形式でフォーマットする
-    pub fn to_text(&self) -> String {
-        let mut out = String::new();
-        out.push_str(&format!("処理行数: {}\n", self.rows_processed));
+impl StatsReport for ExtractStats {
+    fn to_text(&self) -> String {
+        let mut lines = vec![format!("処理行数: {}", self.rows_processed)];
         if !self.per_rule.is_empty() {
-            out.push_str("ルール別:\n");
+            lines.push("ルール別:".to_string());
             for r in &self.per_rule {
-                out.push_str(&format!("  {}: 抽出 {} 件\n", r.out_col, r.extracted_rows));
+                lines.push(format!("  {}: 抽出 {} 件", r.out_col, r.extracted_rows));
             }
         }
-        out
+        lines.join("\n")
     }
 
-    /// JSON 形式でフォーマットする
-    pub fn to_json(&self) -> String {
+    fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).expect("ExtractStats は常にシリアライズできる")
     }
 }

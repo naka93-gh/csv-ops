@@ -1,4 +1,5 @@
 use super::*;
+use crate::StatsReport;
 
 fn sample() -> InfoReport {
     InfoReport {

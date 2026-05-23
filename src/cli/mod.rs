@@ -2,9 +2,11 @@
 // 各サブコマンドの引数定義は子モジュールで持ち、ここでは Cli/Command の集約と dispatch を行う
 
 use std::error::Error;
+use std::path::Path;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
+use csv_ops::StatsReport;
 
 pub(crate) mod convert;
 pub(crate) mod extract;
@@ -13,6 +15,27 @@ pub(crate) mod info;
 pub(crate) mod mask;
 pub(crate) mod replace;
 pub(crate) mod similarity;
+
+/// 統計／メタ情報レポートを指定形式でフォーマットして出力する
+/// `file` 指定時はそのパスへ、未指定時は標準出力へ書く
+/// text/json いずれも末尾改行を 1 つ付与した内容で書く
+pub(crate) fn emit_report<R: StatsReport>(
+    report: &R,
+    format: &str,
+    file: Option<&Path>,
+) -> Result<(), Box<dyn Error>> {
+    let body = match format {
+        "json" => report.to_json(),
+        "text" => report.to_text(),
+        other => return Err(format!("不明な出力形式: {} (text / json)", other).into()),
+    };
+    let formatted = format!("{}\n", body);
+    match file {
+        Some(path) => std::fs::write(path, formatted)?,
+        None => print!("{}", formatted),
+    }
+    Ok(())
+}
 
 /// 区切り文字エイリアスを 1 バイトに変換する
 /// comma / tab / pipe / semicolon のいずれかを受け付ける

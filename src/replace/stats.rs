@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::StatsReport;
+
 /// replace 実行の統計
 #[derive(Debug, Serialize)]
 pub struct ReplaceStats {
@@ -43,27 +45,28 @@ impl ReplaceStats {
             per_rule,
         }
     }
+}
 
-    /// テキスト形式でフォーマットする
-    pub fn to_text(&self) -> String {
-        let mut out = String::new();
-        out.push_str(&format!("処理行数:   {}\n", self.rows_processed));
-        out.push_str(&format!("変更行数:   {}\n", self.rows_modified));
-        out.push_str(&format!("総置換回数: {}\n", self.total_replacements));
+impl StatsReport for ReplaceStats {
+    fn to_text(&self) -> String {
+        let mut lines = vec![
+            format!("処理行数:   {}", self.rows_processed),
+            format!("変更行数:   {}", self.rows_modified),
+            format!("総置換回数: {}", self.total_replacements),
+        ];
         if !self.per_rule.is_empty() {
-            out.push_str("ルール別:\n");
+            lines.push("ルール別:".to_string());
             for r in &self.per_rule {
-                out.push_str(&format!(
-                    "  {}: マッチ {}, 影響行数 {}\n",
+                lines.push(format!(
+                    "  {}: マッチ {}, 影響行数 {}",
                     r.rule_id, r.matches, r.rows_affected
                 ));
             }
         }
-        out
+        lines.join("\n")
     }
 
-    /// JSON 形式でフォーマットする
-    pub fn to_json(&self) -> String {
+    fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).expect("ReplaceStats は常にシリアライズできる")
     }
 }
