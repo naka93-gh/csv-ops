@@ -29,5 +29,19 @@ panic = "abort"
 
 [dev-dependencies]
 assert_cmd = "2.2"
+criterion = { version = "0.5", features = ["html_reports"] }
 predicates = "3.1"
+rand = "0.9"
 tempfile = "3.27"
+
+[[bench]]
+name = "mask"
+harness = false
+
+[[bench]]
+name = "replace"
+harness = false
+
+[[bench]]
+name = "similarity"
+harness = false
