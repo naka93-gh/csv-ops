@@ -18,6 +18,10 @@ Shift_JIS や表記揺れをどうにかするために作っています。
 
 ## インストール
 
+### バイナリダウンロード
+
+[Releases](https://github.com/naka93-gh/csv-ops/releases/latest) から OS / アーキテクチャに合うアーカイブを落として展開してください。Linux / macOS (Intel / Apple Silicon) / Windows のバイナリを配布しています。
+
 ### cargo（ソースから）
 
 ```
