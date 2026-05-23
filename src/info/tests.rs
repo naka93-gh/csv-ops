@@ -27,10 +27,3 @@ fn detect_delimiter_defaults_to_comma() {
     assert_eq!(detect_delimiter("singlecolumn\n"), b',');
 }
 
-#[test]
-fn analyze_line_ending_classifies() {
-    assert_eq!(analyze_line_ending(b"a,b\n1,2\n"), LineEnding::Lf);
-    assert_eq!(analyze_line_ending(b"a,b\r\n1,2\r\n"), LineEnding::Crlf);
-    assert_eq!(analyze_line_ending(b"a,b\r\n1,2\n"), LineEnding::Mixed);
-    assert_eq!(analyze_line_ending(b"a,b"), LineEnding::None);
-}

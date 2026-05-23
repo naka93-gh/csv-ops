@@ -3,9 +3,9 @@ pub mod report;
 use std::path::PathBuf;
 
 use crate::error::CsvOpsError;
-use crate::io::detect_encoding;
+use crate::io::{analyze_line_ending, detect_encoding};
 
-use report::{InfoReport, LineEnding};
+use report::InfoReport;
 
 /// info::run に渡す設定一式
 pub struct InfoRequest {
@@ -113,27 +113,6 @@ fn detect_delimiter(text: &str) -> u8 {
         }
     }
     best
-}
-
-/// 生バイトを走査して行終端の種類を返す
-fn analyze_line_ending(bytes: &[u8]) -> LineEnding {
-    let mut crlf = false;
-    let mut lone_lf = false;
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'\n' {
-            if i > 0 && bytes[i - 1] == b'\r' {
-                crlf = true;
-            } else {
-                lone_lf = true;
-            }
-        }
-    }
-    match (crlf, lone_lf) {
-        (true, true) => LineEnding::Mixed,
-        (true, false) => LineEnding::Crlf,
-        (false, true) => LineEnding::Lf,
-        (false, false) => LineEnding::None,
-    }
 }
 
 #[cfg(test)]

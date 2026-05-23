@@ -14,6 +14,7 @@ use encoding_rs::Encoding;
 use crate::error::{CsvOpsError, EncodingError};
 use crate::io::decoding_reader::DecodingReader;
 use crate::io::encoding_writer::EncodingWriter;
+use crate::io::{LineEnding, analyze_line_ending};
 
 /// CSV を 1 行ずつ変換する処理の trait
 /// run_pipeline がヘッダー → データ行の順に呼び出す。
@@ -155,22 +156,23 @@ fn temp_path_for(output: &Path) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// 入力ファイル先頭を読み、最初の改行が CRLF かどうかを返す
-/// \r \n は ASCII 制御文字で SJIS / EUC-JP / UTF-8 のどの多バイト列にも紛れないため、
-/// デコード前の生バイトのまま走査して安全
+/// 入力ファイルから最大 1MB をサンプリングし、行終端が CRLF かどうかを返す
+/// CRLF と LF が混在している場合は警告を stderr に出し、CRLF として扱う (より一般的な業務 CSV に合わせる)
 fn detect_crlf(path: &Path) -> Result<bool, CsvOpsError> {
+    /// 行終端判定で読むサンプル長 (1MB)
+    /// 先頭 64KB だけでは「ヘッダ部分は CRLF、本文は LF」のような Mixed を取りこぼすため広めに取る
+    const SAMPLE_LEN: usize = 1024 * 1024;
     let mut file = File::open(path)?;
-    let mut buf = [0u8; 65536];
+    let mut buf = vec![0u8; SAMPLE_LEN];
     let n = file.read(&mut buf)?;
-    Ok(first_newline_is_crlf(&buf[..n]))
-}
-
-/// バイト列の最初の改行が CRLF かどうか
-fn first_newline_is_crlf(bytes: &[u8]) -> bool {
-    match bytes.iter().position(|&b| b == b'\n') {
-        Some(i) => i > 0 && bytes[i - 1] == b'\r',
-        None => false,
-    }
+    Ok(match analyze_line_ending(&buf[..n]) {
+        LineEnding::Crlf => true,
+        LineEnding::Lf | LineEnding::None => false,
+        LineEnding::Mixed => {
+            eprintln!("警告: 入力に CRLF と LF が混在しています。出力では CRLF に統一します");
+            true
+        }
+    })
 }
 
 #[cfg(test)]
@@ -178,18 +180,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn crlf_detected() {
-        assert!(first_newline_is_crlf(b"a,b\r\n1,2\r\n"));
+    fn detect_crlf_reads_crlf_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("crlf.csv");
+        std::fs::write(&path, b"a,b\r\n1,2\r\n").unwrap();
+        assert!(detect_crlf(&path).unwrap());
     }
 
     #[test]
-    fn lf_only_is_not_crlf() {
-        assert!(!first_newline_is_crlf(b"a,b\n1,2\n"));
+    fn detect_crlf_reads_lf_file_as_false() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("lf.csv");
+        std::fs::write(&path, b"a,b\n1,2\n").unwrap();
+        assert!(!detect_crlf(&path).unwrap());
     }
 
     #[test]
-    fn no_newline_is_not_crlf() {
-        assert!(!first_newline_is_crlf(b"a,b"));
+    fn detect_crlf_treats_mixed_as_crlf_with_warning() {
+        // Mixed (CRLF + LF) のときは CRLF として扱う。警告は stderr に出るが、ここでは戻り値だけ確認
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("mixed.csv");
+        std::fs::write(&path, b"a,b\r\n1,2\nc,d\r\n").unwrap();
+        assert!(detect_crlf(&path).unwrap());
     }
 
     #[test]

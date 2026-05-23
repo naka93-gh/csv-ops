@@ -1,28 +1,6 @@
 use serde::Serialize;
 
-/// 行終端の種類
-#[derive(Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum LineEnding {
-    Lf,
-    Crlf,
-    /// CRLF と LF が混在
-    Mixed,
-    /// 改行が 1 つも無い
-    None,
-}
-
-impl LineEnding {
-    /// テキスト表示用の名前
-    fn text(&self) -> &'static str {
-        match self {
-            LineEnding::Lf => "LF",
-            LineEnding::Crlf => "CRLF",
-            LineEnding::Mixed => "mixed",
-            LineEnding::None => "none",
-        }
-    }
-}
+use crate::io::LineEnding;
 
 /// info の解析結果
 /// JSON 出力は serde 由来。delimiter / quote は表示用文字列で持つ。
