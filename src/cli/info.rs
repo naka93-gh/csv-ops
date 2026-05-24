@@ -14,9 +14,9 @@ pub(crate) struct InfoArgs {
     #[arg(short = 'i', long)]
     pub input: PathBuf,
 
-    /// 出力形式 (text / json)
+    /// 統計出力形式 (text / json)
     #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub format: String,
+    pub stats_format: String,
 
     /// 区切り文字 (comma / tab / pipe / semicolon)。未指定ならヘッダー行から自動判定
     #[arg(long, value_name = "ALIAS")]
@@ -45,6 +45,6 @@ pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let report = csv_ops::info::run(request)?;
-    emit_report(&report, &args.format, None)?;
+    emit_report(&report, &args.stats_format, None)?;
     Ok(ExitCode::SUCCESS)
 }

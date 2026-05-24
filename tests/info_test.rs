@@ -97,7 +97,7 @@ fn json_format_is_valid() {
     let output = csv_ops()
         .args(["info", "-i"])
         .arg(&input)
-        .args(["--format", "json"])
+        .args(["--stats-format", "json"])
         .assert()
         .success()
         .get_output()
@@ -127,7 +127,7 @@ fn invalid_format_fails() {
     csv_ops()
         .args(["info", "-i"])
         .arg(&input)
-        .args(["--format", "xml"])
+        .args(["--stats-format", "xml"])
         .assert()
         .failure();
 }
