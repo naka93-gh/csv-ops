@@ -17,15 +17,32 @@ pub(crate) enum TargetColumns {
     /// 全カラム横断
     All,
     /// 解決済みの対象列インデックス
-    Indices(Vec<usize>),
+    /// list: 順序保持 + 範囲チェック用、mask: O(1) lookup 用ビットマップ
+    Indices { list: Vec<usize>, mask: Vec<bool> },
 }
 
 impl TargetColumns {
-    /// col_index が置換対象かどうか
+    /// 解決済みのインデックス列から TargetColumns::Indices を組み立てる
+    /// list を保持しつつ、max+1 サイズの bool ビットマップで O(1) lookup できるようにする
+    fn from_indices(list: Vec<usize>) -> Self {
+        let mask = match list.iter().max() {
+            Some(&max) => {
+                let mut m = vec![false; max + 1];
+                for &i in &list {
+                    m[i] = true;
+                }
+                m
+            }
+            None => Vec::new(),
+        };
+        Self::Indices { list, mask }
+    }
+
+    /// col_index が置換対象かどうか (O(1))
     fn includes(&self, col_index: usize) -> bool {
         match self {
             TargetColumns::All => true,
-            TargetColumns::Indices(idx) => idx.contains(&col_index),
+            TargetColumns::Indices { mask, .. } => mask.get(col_index).copied().unwrap_or(false),
         }
     }
 }
@@ -59,8 +76,8 @@ impl ReplaceTransform {
     /// 戻り値はこの行でマッチしたルール index の列 (統計集計用、重複あり = マッチ回数分)
     fn apply(&self, record: &mut StringRecord, row: u64) -> Result<Vec<usize>, TransformError> {
         // ヘッダー無し + 列番号指定では解決時に範囲チェックできないため、ここで検証する
-        if let TargetColumns::Indices(idx) = &self.target {
-            for &i in idx {
+        if let TargetColumns::Indices { list, .. } = &self.target {
+            for &i in list {
                 if i >= record.len() {
                     return Err(TransformError::IndexOutOfRange {
                         index: i,
@@ -173,7 +190,7 @@ impl RecordTransform for ReplaceTransform {
         self.target = match &self.columns {
             ColumnTarget::All => TargetColumns::All,
             ColumnTarget::Specified(cols) => {
-                TargetColumns::Indices(resolve_indices(cols, headers)?)
+                TargetColumns::from_indices(resolve_indices(cols, headers)?)
             }
         };
         self.headers = headers.cloned();
