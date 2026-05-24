@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use csv::StringRecord;
@@ -69,28 +70,40 @@ impl ReplaceTransform {
             }
         }
 
-        // cell ごとに置換し、最後に record を差し替える
-        // (csv::StringRecord は cell 単位の差し替えができないため)
+        // record を一旦取り出して借用ベースで処理する
+        // (csv::StringRecord は cell 単位の差し替えができないため最後に再構築)
+        let owned = std::mem::take(record);
+        let mut new_fields: Vec<Cow<'_, str>> = Vec::with_capacity(owned.len());
         let mut row_matches: Vec<usize> = Vec::new();
-        let mut new_fields: Vec<String> = Vec::with_capacity(record.len());
-        for (col_index, field) in record.iter().enumerate() {
-            // 対象列でなければ元の値をそのまま残す
+
+        for (col_index, field) in owned.iter().enumerate() {
+            // 対象列でなければ借用のままで素通し (String alloc を避ける)
             if !self.target.includes(col_index) {
-                new_fields.push(field.to_string());
+                new_fields.push(Cow::Borrowed(field));
                 continue;
             }
 
-            // エラーメッセージ用のカラム名 (ヘッダーがあれば名前、なければ列番号)
-            let column_name = self
-                .headers
-                .as_ref()
-                .and_then(|h| h.get(col_index))
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("col[{}]", col_index));
+            // エラーメッセージ用カラム名は衝突検知エラー時のみ format するよう遅延
+            let column_name = || {
+                self.headers
+                    .as_ref()
+                    .and_then(|h| h.get(col_index))
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("col[{}]", col_index))
+            };
 
-            let (replaced, matched) = self.apply_cell(field, row, &column_name)?;
-            row_matches.extend(matched);
-            new_fields.push(replaced);
+            match self.apply_cell(field, row, column_name) {
+                Ok((replaced, matched)) => {
+                    row_matches.extend(matched);
+                    new_fields.push(replaced);
+                }
+                Err(e) => {
+                    // エラー時は record を元の状態に戻す
+                    drop(new_fields);
+                    *record = owned;
+                    return Err(e);
+                }
+            }
         }
 
         *record = StringRecord::from(new_fields);
@@ -98,13 +111,16 @@ impl ReplaceTransform {
     }
 
     /// セル単位の置換処理
-    /// 戻り値は (置換後の文字列, マッチしたルール index 列)
-    fn apply_cell(
+    /// 戻り値は (置換後の文字列 (マッチなしなら借用), マッチしたルール index 列)
+    fn apply_cell<'a, F>(
         &self,
-        cell: &str,
+        cell: &'a str,
         row: u64,
-        column: &str,
-    ) -> Result<(String, Vec<usize>), TransformError> {
+        column_name: F,
+    ) -> Result<(Cow<'a, str>, Vec<usize>), TransformError>
+    where
+        F: FnOnce() -> String,
+    {
         // 全ルールのマッチ位置を収集する
         // 単純置換・正規表現どちらも matcher().find_iter で非オーバーラップマッチを得る
         // 元の cell に対して全ルール評価するので、評価の連鎖はしない
@@ -115,9 +131,9 @@ impl ReplaceTransform {
             }
         }
 
-        // マッチがなければ変更しない
+        // マッチがなければ借用で返す (String allocation を回避)
         if matches.is_empty() {
-            return Ok((cell.to_string(), Vec::new()));
+            return Ok((Cow::Borrowed(cell), Vec::new()));
         }
 
         // 衝突検知と後ろからの置換のため、開始位置でソートする
@@ -128,7 +144,7 @@ impl ReplaceTransform {
             if matches[i - 1].1 > matches[i].0 {
                 return Err(TransformError::RuntimeCollision {
                     row,
-                    column: column.to_string(),
+                    column: column_name(),
                     rules: vec![
                         matches[i - 1].2.id().to_string(),
                         matches[i].2.id().to_string(),
@@ -144,7 +160,7 @@ impl ReplaceTransform {
         }
 
         let matched: Vec<usize> = matches.iter().map(|(_, _, rule)| rule.id().index).collect();
-        Ok((result, matched))
+        Ok((Cow::Owned(result), matched))
     }
 }
 
