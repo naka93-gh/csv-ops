@@ -63,10 +63,6 @@ impl StatsReport for InfoReport {
         ];
         lines.join("\n")
     }
-
-    fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self).expect("InfoReport は常にシリアライズできる")
-    }
 }
 
 /// バイト数を人間可読なサイズ文字列にする
