@@ -96,6 +96,29 @@ pub(crate) fn ensure_in_range(
     Ok(())
 }
 
+/// 追加する出力列名が既存ヘッダーまたは他の追加列と衝突しないか検査する
+/// ヘッダー無し時は no-op (列名衝突は発生し得ない)
+pub(crate) fn check_output_conflicts<'a, I>(
+    headers: Option<&StringRecord>,
+    new_cols: I,
+) -> Result<(), TransformError>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let Some(h) = headers else {
+        return Ok(());
+    };
+    let mut seen: std::collections::HashSet<String> = h.iter().map(|s| s.to_string()).collect();
+    for name in new_cols {
+        if !seen.insert(name.to_string()) {
+            return Err(TransformError::OutputColumnConflict {
+                name: name.to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,5 +162,37 @@ mod tests {
             }
             other => panic!("想定外: {:?}", other),
         }
+    }
+
+    #[test]
+    fn check_output_conflicts_no_headers_is_noop() {
+        let r = check_output_conflicts(None, ["a", "a"]);
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn check_output_conflicts_against_existing() {
+        let h = StringRecord::from(vec!["id", "name"]);
+        let err = check_output_conflicts(Some(&h), ["name"]).unwrap_err();
+        match err {
+            TransformError::OutputColumnConflict { name } => assert_eq!(name, "name"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn check_output_conflicts_among_new() {
+        let h = StringRecord::from(vec!["id"]);
+        let err = check_output_conflicts(Some(&h), ["flag", "flag"]).unwrap_err();
+        match err {
+            TransformError::OutputColumnConflict { name } => assert_eq!(name, "flag"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn check_output_conflicts_ok() {
+        let h = StringRecord::from(vec!["id", "name"]);
+        assert!(check_output_conflicts(Some(&h), ["flag", "score"]).is_ok());
     }
 }

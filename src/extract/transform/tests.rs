@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::error::TransformError;
+
 /// TOML から ExtractTransform を組み立てるヘルパ
 fn transform(toml: &str) -> ExtractTransform {
     ExtractTransform::new(ExtractConfig::from_toml(toml).unwrap())

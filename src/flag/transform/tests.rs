@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::error::TransformError;
+
 /// TOML から FlagTransform を組み立てるヘルパ
 fn transform(toml: &str) -> FlagTransform {
     FlagTransform::new(FlagConfig::from_toml(toml).unwrap())
