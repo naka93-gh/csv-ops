@@ -133,3 +133,6 @@ impl RecordTransform for SimilarityTransform {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -66,3 +66,37 @@ pub fn run(request: ConvertRequest) -> Result<Stats, CsvOpsError> {
         ..Default::default()
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rec(fields: &[&str]) -> StringRecord {
+        fields.iter().copied().collect()
+    }
+
+    #[test]
+    fn init_returns_none_with_headers() {
+        // convert は has_headers=false 固定で動くため、init には常に None が渡る想定
+        // ただし trait 仕様上 Some が来ても出力ヘッダーは作らない (None) を返す
+        let mut t = PassThrough;
+        assert!(t.init(Some(&rec(&["a", "b"]))).unwrap().is_none());
+    }
+
+    #[test]
+    fn init_returns_none_without_headers() {
+        let mut t = PassThrough;
+        assert!(t.init(None).unwrap().is_none());
+    }
+
+    #[test]
+    fn on_record_leaves_record_untouched() {
+        let mut t = PassThrough;
+        let mut record = rec(&["x", "y", "z"]);
+        t.on_record(&mut record, 1).unwrap();
+        assert_eq!(record.len(), 3);
+        assert_eq!(&record[0], "x");
+        assert_eq!(&record[1], "y");
+        assert_eq!(&record[2], "z");
+    }
+}
