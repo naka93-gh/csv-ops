@@ -8,12 +8,14 @@ use crate::stats::Stats;
 /// マスク処理本体
 /// 指定列の各セルを、文字数を保ったまま mask_char で塗り潰す
 pub(crate) struct MaskTransform {
-    /// マスク対象の列指定 (init で indices に解決する)
+    /// マスク対象の列指定 (init で indices / target_mask に解決する)
     columns: Vec<ColumnRef>,
     /// 塗り潰しに使う文字
     mask_char: char,
-    /// 解決済みの対象列インデックス
+    /// 解決済みの対象列インデックス (範囲チェック・順序保持用)
     indices: Vec<usize>,
+    /// 対象列判定 O(1) 用ビットマップ (max+1 サイズ)
+    target_mask: Vec<bool>,
     /// 処理統計
     pub stats: Stats,
 }
@@ -24,6 +26,7 @@ impl MaskTransform {
             columns,
             mask_char,
             indices: Vec::new(),
+            target_mask: Vec::new(),
             stats: Stats::default(),
         }
     }
@@ -36,6 +39,17 @@ impl RecordTransform for MaskTransform {
     ) -> Result<Option<StringRecord>, CsvOpsError> {
         // 列指定をヘッダー照合でインデックスへ解決する
         self.indices = resolve_indices(&self.columns, headers)?;
+        // O(1) lookup 用にビットマップを構築する (max+1 サイズ)
+        self.target_mask = match self.indices.iter().max() {
+            Some(&max) => {
+                let mut m = vec![false; max + 1];
+                for &i in &self.indices {
+                    m[i] = true;
+                }
+                m
+            }
+            None => Vec::new(),
+        };
         // ヘッダー行はマスクせずそのまま出力する
         Ok(headers.cloned())
     }
@@ -56,8 +70,9 @@ impl RecordTransform for MaskTransform {
         let mut new_fields: Vec<String> = Vec::with_capacity(record.len());
         let mut masked_any = false;
         for (i, field) in record.iter().enumerate() {
-            // 空セルは塗り潰しても変化しないのでマスク対象から除く
-            if self.indices.contains(&i) && !field.is_empty() {
+            // O(1) 対象列判定 + 空セルは塗り潰しても変化しないのでマスク対象から除く
+            let is_target = self.target_mask.get(i).copied().unwrap_or(false);
+            if is_target && !field.is_empty() {
                 // chars().count() で塗り潰す: バイト長だとマルチバイトで桁数が狂う
                 new_fields.push(self.mask_char.to_string().repeat(field.chars().count()));
                 self.stats.changes_total += 1;
