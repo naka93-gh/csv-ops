@@ -1,6 +1,6 @@
 use csv::StringRecord;
 
-use crate::column::{ColumnRef, resolve_indices};
+use crate::column::{ColumnRef, build_index_mask, resolve_indices};
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
@@ -40,16 +40,7 @@ impl RecordTransform for MaskTransform {
         // 列指定をヘッダー照合でインデックスへ解決する
         self.indices = resolve_indices(&self.columns, headers)?;
         // O(1) lookup 用にビットマップを構築する (max+1 サイズ)
-        self.target_mask = match self.indices.iter().max() {
-            Some(&max) => {
-                let mut m = vec![false; max + 1];
-                for &i in &self.indices {
-                    m[i] = true;
-                }
-                m
-            }
-            None => Vec::new(),
-        };
+        self.target_mask = build_index_mask(&self.indices);
         // ヘッダー行はマスクせずそのまま出力する
         Ok(headers.cloned())
     }

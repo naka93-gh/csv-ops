@@ -63,3 +63,47 @@ pub(crate) fn resolve_indices(
     }
     Ok(indices)
 }
+
+/// 列インデックス列から O(1) lookup 用の bool ビットマップを作る
+/// サイズは max+1。空入力なら空ベクタを返す
+pub(crate) fn build_index_mask(list: &[usize]) -> Vec<bool> {
+    match list.iter().max() {
+        Some(&max) => {
+            let mut m = vec![false; max + 1];
+            for &i in list {
+                m[i] = true;
+            }
+            m
+        }
+        None => Vec::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_index_mask_empty() {
+        let m = build_index_mask(&[]);
+        assert!(m.is_empty());
+    }
+
+    #[test]
+    fn build_index_mask_single() {
+        let m = build_index_mask(&[3]);
+        assert_eq!(m, vec![false, false, false, true]);
+    }
+
+    #[test]
+    fn build_index_mask_multiple_contiguous() {
+        let m = build_index_mask(&[0, 1, 2]);
+        assert_eq!(m, vec![true, true, true]);
+    }
+
+    #[test]
+    fn build_index_mask_sparse() {
+        let m = build_index_mask(&[0, 4, 2]);
+        assert_eq!(m, vec![true, false, true, false, true]);
+    }
+}
