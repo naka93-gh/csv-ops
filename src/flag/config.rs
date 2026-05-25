@@ -2,7 +2,7 @@ use csv::StringRecord;
 use serde::Deserialize;
 
 use crate::column::{ColumnRef, resolve_indices};
-use crate::error::{ConfigError, CsvOpsError, TransformError};
+use crate::error::{ConfigError, CsvOpsError, TransformError, validate_version};
 
 use super::rule::CompiledFlagRule;
 
@@ -39,7 +39,7 @@ impl FlagConfig {
     /// TOML 文字列をパースして検証済みの FlagConfig を返す
     pub fn from_toml(text: &str) -> Result<Self, ConfigError> {
         let config: FlagConfig = toml::from_str(text)?;
-        config.validate_version()?;
+        validate_version(config.version, SUPPORTED_VERSION)?;
         Ok(config)
     }
 
@@ -57,19 +57,6 @@ impl FlagConfig {
         FlagConfig {
             version: Some(SUPPORTED_VERSION),
             rules: vec![spec],
-        }
-    }
-
-    /// version フィールドの検証
-    /// 未指定はエラー、サポート外バージョンもエラー
-    fn validate_version(&self) -> Result<(), ConfigError> {
-        match self.version {
-            None => Err(ConfigError::VersionMissing),
-            Some(v) if v != SUPPORTED_VERSION => Err(ConfigError::UnsupportedVersion {
-                found: v,
-                supported: SUPPORTED_VERSION,
-            }),
-            Some(_) => Ok(()),
         }
     }
 

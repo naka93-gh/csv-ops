@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::error::{ConfigError, CsvOpsError, TransformError};
+use crate::error::{ConfigError, CsvOpsError, TransformError, validate_version};
 
 use super::rule::{CompiledRule, RuleId};
 
@@ -43,7 +43,7 @@ impl ReplaceConfig {
     /// TOML 文字列をパースして検証済みの ReplaceConfig を返す
     pub fn from_toml(text: &str) -> Result<Self, ConfigError> {
         let config: ReplaceConfig = toml::from_str(text)?;
-        config.validate_version()?;
+        validate_version(config.version, SUPPORTED_VERSION)?;
         Ok(config)
     }
 
@@ -73,19 +73,6 @@ impl ReplaceConfig {
             version: Some(SUPPORTED_VERSION),
             options: Options { case_insensitive },
             rules: vec![spec],
-        }
-    }
-
-    /// version フィールドの検証
-    /// 未指定はエラー、サポート外バージョンもエラー
-    fn validate_version(&self) -> Result<(), ConfigError> {
-        match self.version {
-            None => Err(ConfigError::VersionMissing),
-            Some(v) if v != SUPPORTED_VERSION => Err(ConfigError::UnsupportedVersion {
-                found: v,
-                supported: SUPPORTED_VERSION,
-            }),
-            Some(_) => Ok(()),
         }
     }
 
