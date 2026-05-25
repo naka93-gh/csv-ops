@@ -23,7 +23,7 @@ struct DictEntry {
 
 /// ベストマッチの結果
 #[derive(Debug)]
-pub(crate) struct MatchResult {
+pub struct MatchResult {
     /// 最良エントリの canonical 名
     pub canonical: String,
     /// 類似度スコア (0.0-1.0)
@@ -34,7 +34,7 @@ pub(crate) struct MatchResult {
 
 /// マッチ用に正規化済みの辞書
 #[derive(Debug)]
-pub(crate) struct Dictionary {
+pub struct Dictionary {
     /// canonical 一覧 (エントリ index で引く、出力用)
     canonicals: Vec<String>,
     /// マッチ候補: (正規化済み候補文字列, エントリ index)

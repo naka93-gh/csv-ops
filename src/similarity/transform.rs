@@ -13,7 +13,7 @@ const NO_MATCH: &str = "<no match>";
 
 /// similarity マッチ処理本体
 /// ルールの compile (列解決 + 辞書ロード) はヘッダーが要るため init で行う
-pub(crate) struct SimilarityTransform {
+pub struct SimilarityTransform {
     /// 設定 (init で compile する)
     config: SimilarityConfig,
     /// CSV 形式辞書を読むときの区切り文字 (本体 CSV と共通)

@@ -7,7 +7,7 @@ use crate::stats::Stats;
 
 /// マスク処理本体
 /// 指定列の各セルを、文字数を保ったまま mask_char で塗り潰す
-pub(crate) struct MaskTransform {
+pub struct MaskTransform {
     /// マスク対象の列指定 (init で indices / target_mask に解決する)
     columns: Vec<ColumnRef>,
     /// 塗り潰しに使う文字

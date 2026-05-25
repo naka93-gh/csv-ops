@@ -13,7 +13,7 @@ use super::rule::CompiledRule;
 
 /// 解決済みの置換対象列
 /// init で ColumnTarget (列名 / 列番号) をインデックスへ解決した結果
-pub(crate) enum TargetColumns {
+pub enum TargetColumns {
     /// 全カラム横断
     All,
     /// 解決済みの対象列インデックス
@@ -39,7 +39,7 @@ impl TargetColumns {
 }
 
 /// 置換処理本体
-pub(crate) struct ReplaceTransform {
+pub struct ReplaceTransform {
     /// compile 済みルール
     rules: Vec<CompiledRule>,
     /// 列指定の未解決スペック (init で target へ解決)

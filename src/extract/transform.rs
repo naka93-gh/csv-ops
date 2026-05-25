@@ -10,7 +10,7 @@ use super::rule::CompiledExtractRule;
 
 /// extract 抽出処理本体
 /// ルールの compile (正規表現 + 列解決) はヘッダーが要るため init で行う
-pub(crate) struct ExtractTransform {
+pub struct ExtractTransform {
     /// 設定 (init で compile する)
     config: ExtractConfig,
     /// compile 済みルール (init 後に確定)

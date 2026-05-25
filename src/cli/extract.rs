@@ -11,7 +11,7 @@ use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops extract` の引数
 #[derive(Args, Debug)]
-pub(crate) struct ExtractArgs {
+pub struct ExtractArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -70,7 +70,7 @@ pub(crate) struct ExtractArgs {
 }
 
 /// extract サブコマンドのエントリポイント
-pub(crate) fn run(args: ExtractArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: ExtractArgs) -> Result<ExitCode, Box<dyn Error>> {
     // ルール指定の解決
     // --config が優先、なければ --pattern / -c / --out-col の CLI 引数モード
     let rules = match args.config {

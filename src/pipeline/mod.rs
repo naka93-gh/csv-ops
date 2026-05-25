@@ -19,7 +19,7 @@ use crate::io::{LineEnding, analyze_line_ending};
 /// CSV を 1 行ずつ変換する処理の trait
 /// run_pipeline がヘッダー → データ行の順に呼び出す。
 /// 統計は実装側が内部に保持し、run_pipeline 呼び出し後に取り出す。
-pub(crate) trait RecordTransform {
+pub trait RecordTransform {
     /// 初期化フック (各実行で 1 度だけ呼ばれる)
     /// headers はヘッダー行 (ヘッダー無し設定なら None)。
     /// 列名解決や出力列の衝突検査をここで行う。
@@ -32,7 +32,7 @@ pub(crate) trait RecordTransform {
 }
 
 /// run_pipeline に渡す入出力設定
-pub(crate) struct PipelineOptions {
+pub struct PipelineOptions {
     /// 入力ファイルパス
     pub input: PathBuf,
     /// 出力ファイルパス
@@ -52,7 +52,7 @@ pub(crate) struct PipelineOptions {
 }
 
 /// パイプラインを実行し、処理した行数 (ヘッダー除く) を返す
-pub(crate) fn run_pipeline<T: RecordTransform>(
+pub fn run_pipeline<T: RecordTransform>(
     transform: &mut T,
     opts: &PipelineOptions,
 ) -> Result<u64, CsvOpsError> {

@@ -11,7 +11,7 @@ use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops similarity` の引数
 #[derive(Args, Debug)]
-pub(crate) struct SimilarityArgs {
+pub struct SimilarityArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -82,7 +82,7 @@ pub(crate) struct SimilarityArgs {
 }
 
 /// similarity サブコマンドのエントリポイント
-pub(crate) fn run(args: SimilarityArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: SimilarityArgs) -> Result<ExitCode, Box<dyn Error>> {
     // ルール指定の解決。--config が優先、なければ -c / --dict の CLI 引数モード
     let rules = match args.config {
         Some(path) => RuleSource::Config(path),

@@ -10,7 +10,7 @@ use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops info` の引数
 #[derive(Args, Debug)]
-pub(crate) struct InfoArgs {
+pub struct InfoArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -29,7 +29,7 @@ pub(crate) struct InfoArgs {
 }
 
 /// info サブコマンドのエントリポイント
-pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     // 区切り文字は指定があればエイリアスを解決、なければ None (自動判定)
     let delimiter = match args.input_delimiter {
         Some(alias) => Some(parse_delimiter_alias(&alias)?),

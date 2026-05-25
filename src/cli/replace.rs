@@ -14,7 +14,7 @@ use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops replace` の引数
 #[derive(Args, Debug)]
-pub(crate) struct ReplaceArgs {
+pub struct ReplaceArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -81,7 +81,7 @@ pub(crate) struct ReplaceArgs {
 }
 
 /// replace サブコマンドのエントリポイント
-pub(crate) fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
     // ルール指定の解決
     // --config が優先、なければ --from / --to の CLI 引数モード
     let rules = match args.config {

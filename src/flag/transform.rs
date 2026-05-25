@@ -10,7 +10,7 @@ use super::rule::CompiledFlagRule;
 
 /// flag 判定処理本体
 /// ルールの compile (正規表現 + 列解決) はヘッダーが要るため init で行う
-pub(crate) struct FlagTransform {
+pub struct FlagTransform {
     /// 設定 (init で compile する)
     config: FlagConfig,
     /// compile 済みルール (init 後に確定)

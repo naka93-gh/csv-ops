@@ -3,7 +3,7 @@
 /// compile 済みの flag ルール
 /// 対象列は run 側でヘッダ照合により列インデックスへ解決済み
 /// ルールの識別子には out_col をそのまま使う (flag では out_col が必須かつ一意のため)
-pub(crate) struct CompiledFlagRule {
+pub struct CompiledFlagRule {
     /// マッチ判定に使う正規表現
     pub pattern: regex::Regex,
     /// 判定対象の列インデックス (解決済み)
