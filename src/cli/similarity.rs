@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::ColumnRef;
-use csv_ops::similarity::{RuleSource, SimilarityRequest};
+
+use crate::column::ColumnRef;
+use crate::similarity::{RuleSource, SimilarityRequest};
 
 use super::{emit_report, parse_delimiter_alias};
 
@@ -40,7 +41,7 @@ pub(crate) struct SimilarityArgs {
     pub score_col: String,
 
     /// マッチとみなすしきい値 (0.0-1.0)
-    #[arg(long, default_value_t = csv_ops::similarity::DEFAULT_THRESHOLD)]
+    #[arg(long, default_value_t = crate::similarity::DEFAULT_THRESHOLD)]
     pub threshold: f64,
 
     /// 類似度アルゴリズム (levenshtein / damerau / jaro-winkler / dice)
@@ -122,7 +123,7 @@ pub(crate) fn run(args: SimilarityArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = csv_ops::similarity::run(request)?;
+    let stats = crate::similarity::run(request)?;
     emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }

@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::info::InfoRequest;
+
+use crate::info::InfoRequest;
 
 use super::{emit_report, parse_delimiter_alias};
 
@@ -44,7 +45,7 @@ pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
         quote,
     };
 
-    let report = csv_ops::info::run(request)?;
+    let report = crate::info::run(request)?;
     emit_report(&report, &args.stats_format, None)?;
     Ok(ExitCode::SUCCESS)
 }

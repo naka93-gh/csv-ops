@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::convert::ConvertRequest;
+
+use crate::convert::ConvertRequest;
 
 use super::{emit_report, parse_delimiter_alias};
 
@@ -59,7 +60,7 @@ pub(crate) fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = csv_ops::convert::run(request)?;
+    let stats = crate::convert::run(request)?;
     emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }

@@ -6,7 +6,8 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use csv_ops::StatsReport;
+
+use crate::stats_report::StatsReport;
 
 pub(crate) mod convert;
 pub(crate) mod extract;

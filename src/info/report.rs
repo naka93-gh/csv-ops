@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::StatsReport;
+use crate::stats_report::StatsReport;
 use crate::io::LineEnding;
 
 /// info の解析結果

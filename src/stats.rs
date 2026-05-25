@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 
-use crate::StatsReport;
+use crate::stats_report::StatsReport;
 
 /// サブコマンド実行の統計 (全サブコマンド共通)
 #[derive(Debug, Default, Serialize)]

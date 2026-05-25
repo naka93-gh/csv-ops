@@ -3,6 +3,20 @@ use std::process::ExitCode;
 use clap::Parser;
 
 mod cli;
+mod column;
+mod convert;
+mod error;
+mod extract;
+mod flag;
+mod info;
+mod io;
+mod mask;
+mod pipeline;
+mod replace;
+mod similarity;
+mod stats;
+mod stats_report;
+mod text;
 
 /// エントリーポイント
 /// clap で解析し dispatch
