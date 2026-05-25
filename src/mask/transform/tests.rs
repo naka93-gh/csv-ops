@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::error::TransformError;
+
 /// &str スライスから StringRecord を作る
 fn rec(fields: &[&str]) -> StringRecord {
     fields.iter().copied().collect()

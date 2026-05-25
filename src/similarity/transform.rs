@@ -1,8 +1,7 @@
-use std::collections::HashSet;
-
 use csv::StringRecord;
 
-use crate::error::{CsvOpsError, TransformError};
+use crate::column::{check_output_conflicts, ensure_in_range};
+use crate::error::CsvOpsError;
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
 
@@ -45,23 +44,13 @@ impl RecordTransform for SimilarityTransform {
         self.compiled = self.config.compile_rules(headers, self.delimiter)?;
 
         // out_col / score_col の衝突検査 (ヘッダー有り時のみ)
-        if let Some(h) = headers {
-            let mut seen: HashSet<String> = h.iter().map(|s| s.to_string()).collect();
-            for rule in &self.compiled {
-                if !seen.insert(rule.out_col.clone()) {
-                    return Err(TransformError::OutputColumnConflict {
-                        name: rule.out_col.clone(),
-                    }
-                    .into());
-                }
-                if !seen.insert(rule.score_col.clone()) {
-                    return Err(TransformError::OutputColumnConflict {
-                        name: rule.score_col.clone(),
-                    }
-                    .into());
-                }
-            }
-        }
+        // ルールあたり [out_col, score_col] の 2 要素を flatten して 1 度に検査する
+        check_output_conflicts(
+            headers,
+            self.compiled
+                .iter()
+                .flat_map(|r| [r.out_col.as_str(), r.score_col.as_str()]),
+        )?;
 
         // 統計を out_col 一覧で初期化する (per_rule は ID 列で 0 初期化)
         let out_cols: Vec<String> = self.compiled.iter().map(|r| r.out_col.clone()).collect();
@@ -92,14 +81,7 @@ impl RecordTransform for SimilarityTransform {
         let mut row_hit = false;
 
         for (i, rule) in self.compiled.iter().enumerate() {
-            // ヘッダー無し + 列番号指定では compile 時に範囲チェックできないため、行ごとに検証する
-            if rule.column >= original_len {
-                return Err(TransformError::IndexOutOfRange {
-                    index: rule.column,
-                    columns: original_len,
-                }
-                .into());
-            }
+            ensure_in_range([rule.column], original_len)?;
 
             // 対象セルを正規化し、辞書とベストマッチを取る
             let normalized = rule.normalize.apply(&fields[rule.column]);

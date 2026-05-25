@@ -1,8 +1,7 @@
-use std::collections::HashSet;
-
 use csv::StringRecord;
 
-use crate::error::{CsvOpsError, TransformError};
+use crate::column::{check_output_conflicts, ensure_in_range};
+use crate::error::CsvOpsError;
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
 
@@ -38,19 +37,8 @@ impl RecordTransform for FlagTransform {
         // ルールを compile (正規表現 compile + 対象列をヘッダー照合でインデックス解決)
         self.compiled = self.config.compile_rules(headers)?;
 
-        // out_col 衝突検査 (ヘッダー有り時のみ)
-        // 既存カラム名との衝突と、ルール間の out_col 重複を 1 つの集合でまとめて検出する
-        if let Some(h) = headers {
-            let mut seen: HashSet<String> = h.iter().map(|s| s.to_string()).collect();
-            for rule in &self.compiled {
-                if !seen.insert(rule.out_col.clone()) {
-                    return Err(TransformError::OutputColumnConflict {
-                        name: rule.out_col.clone(),
-                    }
-                    .into());
-                }
-            }
-        }
+        // out_col 衝突検査 (ヘッダー有り時のみ既存カラム名 + ルール間の重複をまとめて検出)
+        check_output_conflicts(headers, self.compiled.iter().map(|r| r.out_col.as_str()))?;
 
         // 統計を out_col 一覧で初期化する (per_rule は ID 列で 0 初期化)
         let out_cols: Vec<String> = self.compiled.iter().map(|r| r.out_col.clone()).collect();
@@ -78,16 +66,7 @@ impl RecordTransform for FlagTransform {
         let mut row_hit = false;
 
         for (i, rule) in self.compiled.iter().enumerate() {
-            // ヘッダー無し + 列番号指定では compile 時に範囲チェックできないため、行ごとに検証する
-            for &c in &rule.columns {
-                if c >= original_len {
-                    return Err(TransformError::IndexOutOfRange {
-                        index: c,
-                        columns: original_len,
-                    }
-                    .into());
-                }
-            }
+            ensure_in_range(rule.columns.iter().copied(), original_len)?;
 
             // ルール内の対象列のうち 1 つでもマッチすれば true
             let matched = rule

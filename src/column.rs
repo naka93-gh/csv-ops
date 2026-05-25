@@ -63,3 +63,136 @@ pub(crate) fn resolve_indices(
     }
     Ok(indices)
 }
+
+/// 列インデックス列から O(1) lookup 用の bool ビットマップを作る
+/// サイズは max+1。空入力なら空ベクタを返す
+pub(crate) fn build_index_mask(list: &[usize]) -> Vec<bool> {
+    match list.iter().max() {
+        Some(&max) => {
+            let mut m = vec![false; max + 1];
+            for &i in list {
+                m[i] = true;
+            }
+            m
+        }
+        None => Vec::new(),
+    }
+}
+
+/// 列番号が len の範囲内かを行単位で検証する
+/// ヘッダー無し + 列番号指定では init で範囲チェックできないため、各行で呼ぶ
+pub(crate) fn ensure_in_range(
+    indices: impl IntoIterator<Item = usize>,
+    len: usize,
+) -> Result<(), TransformError> {
+    for i in indices {
+        if i >= len {
+            return Err(TransformError::IndexOutOfRange {
+                index: i,
+                columns: len,
+            });
+        }
+    }
+    Ok(())
+}
+
+/// 追加する出力列名が既存ヘッダーまたは他の追加列と衝突しないか検査する
+/// ヘッダー無し時は no-op (列名衝突は発生し得ない)
+pub(crate) fn check_output_conflicts<'a, I>(
+    headers: Option<&StringRecord>,
+    new_cols: I,
+) -> Result<(), TransformError>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let Some(h) = headers else {
+        return Ok(());
+    };
+    let mut seen: std::collections::HashSet<String> = h.iter().map(|s| s.to_string()).collect();
+    for name in new_cols {
+        if !seen.insert(name.to_string()) {
+            return Err(TransformError::OutputColumnConflict {
+                name: name.to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_index_mask_empty() {
+        let m = build_index_mask(&[]);
+        assert!(m.is_empty());
+    }
+
+    #[test]
+    fn build_index_mask_single() {
+        let m = build_index_mask(&[3]);
+        assert_eq!(m, vec![false, false, false, true]);
+    }
+
+    #[test]
+    fn build_index_mask_multiple_contiguous() {
+        let m = build_index_mask(&[0, 1, 2]);
+        assert_eq!(m, vec![true, true, true]);
+    }
+
+    #[test]
+    fn build_index_mask_sparse() {
+        let m = build_index_mask(&[0, 4, 2]);
+        assert_eq!(m, vec![true, false, true, false, true]);
+    }
+
+    #[test]
+    fn ensure_in_range_ok() {
+        assert!(ensure_in_range([0, 1, 2], 3).is_ok());
+    }
+
+    #[test]
+    fn ensure_in_range_out() {
+        let err = ensure_in_range([0, 3], 3).unwrap_err();
+        match err {
+            TransformError::IndexOutOfRange { index, columns } => {
+                assert_eq!(index, 3);
+                assert_eq!(columns, 3);
+            }
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn check_output_conflicts_no_headers_is_noop() {
+        let r = check_output_conflicts(None, ["a", "a"]);
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn check_output_conflicts_against_existing() {
+        let h = StringRecord::from(vec!["id", "name"]);
+        let err = check_output_conflicts(Some(&h), ["name"]).unwrap_err();
+        match err {
+            TransformError::OutputColumnConflict { name } => assert_eq!(name, "name"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn check_output_conflicts_among_new() {
+        let h = StringRecord::from(vec!["id"]);
+        let err = check_output_conflicts(Some(&h), ["flag", "flag"]).unwrap_err();
+        match err {
+            TransformError::OutputColumnConflict { name } => assert_eq!(name, "flag"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn check_output_conflicts_ok() {
+        let h = StringRecord::from(vec!["id", "name"]);
+        assert!(check_output_conflicts(Some(&h), ["flag", "score"]).is_ok());
+    }
+}

@@ -2,6 +2,8 @@ use super::*;
 
 use std::path::Path;
 
+use crate::error::TransformError;
+
 use tempfile::TempDir;
 
 /// 辞書 CSV を一時ファイルに書き、そのパスを返す
