@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use csv::StringRecord;
 
+use crate::column::ensure_in_range;
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
@@ -92,14 +93,7 @@ impl RecordTransform for SimilarityTransform {
         let mut row_hit = false;
 
         for (i, rule) in self.compiled.iter().enumerate() {
-            // ヘッダー無し + 列番号指定では compile 時に範囲チェックできないため、行ごとに検証する
-            if rule.column >= original_len {
-                return Err(TransformError::IndexOutOfRange {
-                    index: rule.column,
-                    columns: original_len,
-                }
-                .into());
-            }
+            ensure_in_range([rule.column], original_len)?;
 
             // 対象セルを正規化し、辞書とベストマッチを取る
             let normalized = rule.normalize.apply(&fields[rule.column]);

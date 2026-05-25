@@ -1,7 +1,7 @@
 use csv::StringRecord;
 
-use crate::column::{ColumnRef, build_index_mask, resolve_indices};
-use crate::error::{CsvOpsError, TransformError};
+use crate::column::{ColumnRef, build_index_mask, ensure_in_range, resolve_indices};
+use crate::error::CsvOpsError;
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
 
@@ -46,16 +46,7 @@ impl RecordTransform for MaskTransform {
     }
 
     fn on_record(&mut self, record: &mut StringRecord, _row: u64) -> Result<(), CsvOpsError> {
-        // ヘッダー無し + 列番号指定では init で範囲チェックできないため、行ごとに検証する
-        for &i in &self.indices {
-            if i >= record.len() {
-                return Err(TransformError::IndexOutOfRange {
-                    index: i,
-                    columns: record.len(),
-                }
-                .into());
-            }
-        }
+        ensure_in_range(self.indices.iter().copied(), record.len())?;
 
         // 対象列のセルを文字数分の mask_char で塗り潰す
         let mut new_fields: Vec<String> = Vec::with_capacity(record.len());

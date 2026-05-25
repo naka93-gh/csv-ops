@@ -79,6 +79,23 @@ pub(crate) fn build_index_mask(list: &[usize]) -> Vec<bool> {
     }
 }
 
+/// 列番号が len の範囲内かを行単位で検証する
+/// ヘッダー無し + 列番号指定では init で範囲チェックできないため、各行で呼ぶ
+pub(crate) fn ensure_in_range(
+    indices: impl IntoIterator<Item = usize>,
+    len: usize,
+) -> Result<(), TransformError> {
+    for i in indices {
+        if i >= len {
+            return Err(TransformError::IndexOutOfRange {
+                index: i,
+                columns: len,
+            });
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,5 +122,22 @@ mod tests {
     fn build_index_mask_sparse() {
         let m = build_index_mask(&[0, 4, 2]);
         assert_eq!(m, vec![true, false, true, false, true]);
+    }
+
+    #[test]
+    fn ensure_in_range_ok() {
+        assert!(ensure_in_range([0, 1, 2], 3).is_ok());
+    }
+
+    #[test]
+    fn ensure_in_range_out() {
+        let err = ensure_in_range([0, 3], 3).unwrap_err();
+        match err {
+            TransformError::IndexOutOfRange { index, columns } => {
+                assert_eq!(index, 3);
+                assert_eq!(columns, 3);
+            }
+            other => panic!("想定外: {:?}", other),
+        }
     }
 }

@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use csv::StringRecord;
 
+use crate::column::ensure_in_range;
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
@@ -78,16 +79,7 @@ impl RecordTransform for FlagTransform {
         let mut row_hit = false;
 
         for (i, rule) in self.compiled.iter().enumerate() {
-            // ヘッダー無し + 列番号指定では compile 時に範囲チェックできないため、行ごとに検証する
-            for &c in &rule.columns {
-                if c >= original_len {
-                    return Err(TransformError::IndexOutOfRange {
-                        index: c,
-                        columns: original_len,
-                    }
-                    .into());
-                }
-            }
+            ensure_in_range(rule.columns.iter().copied(), original_len)?;
 
             // ルール内の対象列のうち 1 つでもマッチすれば true
             let matched = rule

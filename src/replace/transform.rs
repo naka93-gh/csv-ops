@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use csv::StringRecord;
 
-use crate::column::{build_index_mask, resolve_indices};
+use crate::column::{build_index_mask, ensure_in_range, resolve_indices};
 use crate::error::{CsvOpsError, TransformError};
 use crate::pipeline::RecordTransform;
 use crate::stats::Stats;
@@ -68,14 +68,7 @@ impl ReplaceTransform {
     fn apply(&self, record: &mut StringRecord, row: u64) -> Result<Vec<usize>, TransformError> {
         // ヘッダー無し + 列番号指定では解決時に範囲チェックできないため、ここで検証する
         if let TargetColumns::Indices { list, .. } = &self.target {
-            for &i in list {
-                if i >= record.len() {
-                    return Err(TransformError::IndexOutOfRange {
-                        index: i,
-                        columns: record.len(),
-                    });
-                }
-            }
+            ensure_in_range(list.iter().copied(), record.len())?;
         }
 
         // record を一旦取り出して借用ベースで処理する
