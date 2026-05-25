@@ -3,13 +3,14 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::convert::ConvertRequest;
+
+use crate::convert::ConvertRequest;
 
 use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops convert` の引数
 #[derive(Args, Debug)]
-pub(crate) struct ConvertArgs {
+pub struct ConvertArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -48,7 +49,7 @@ pub(crate) struct ConvertArgs {
 }
 
 /// convert サブコマンドのエントリポイント
-pub(crate) fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
     let request = ConvertRequest {
         input: args.input,
         output: args.output,
@@ -59,7 +60,7 @@ pub(crate) fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = csv_ops::convert::run(request)?;
+    let stats = crate::convert::run(request)?;
     emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }

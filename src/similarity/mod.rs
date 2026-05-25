@@ -1,7 +1,7 @@
-pub(crate) mod config;
-pub(crate) mod dict;
-pub(crate) mod rule;
-pub(crate) mod transform;
+pub mod config;
+pub mod dict;
+pub mod rule;
+pub mod transform;
 
 use std::path::PathBuf;
 

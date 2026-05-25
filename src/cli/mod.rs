@@ -6,20 +6,21 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use csv_ops::StatsReport;
 
-pub(crate) mod convert;
-pub(crate) mod extract;
-pub(crate) mod flag;
-pub(crate) mod info;
-pub(crate) mod mask;
-pub(crate) mod replace;
-pub(crate) mod similarity;
+use crate::stats_report::StatsReport;
+
+pub mod convert;
+pub mod extract;
+pub mod flag;
+pub mod info;
+pub mod mask;
+pub mod replace;
+pub mod similarity;
 
 /// 統計／メタ情報レポートを指定形式でフォーマットして出力する
 /// `file` 指定時はそのパスへ、未指定時は標準出力へ書く
 /// text/json いずれも末尾改行を 1 つ付与した内容で書く
-pub(crate) fn emit_report<R: StatsReport>(
+pub fn emit_report<R: StatsReport>(
     report: &R,
     format: &str,
     file: Option<&Path>,
@@ -39,7 +40,7 @@ pub(crate) fn emit_report<R: StatsReport>(
 
 /// 区切り文字エイリアスを 1 バイトに変換する
 /// comma / tab / pipe / semicolon のいずれかを受け付ける
-pub(crate) fn parse_delimiter_alias(alias: &str) -> Result<u8, Box<dyn Error>> {
+pub fn parse_delimiter_alias(alias: &str) -> Result<u8, Box<dyn Error>> {
     match alias {
         "comma" => Ok(b','),
         "tab" => Ok(b'\t'),
@@ -56,7 +57,7 @@ pub(crate) fn parse_delimiter_alias(alias: &str) -> Result<u8, Box<dyn Error>> {
 /// csv-ops のトップレベル CLI
 #[derive(Parser, Debug)]
 #[command(name = "csv-ops", version, about = "CSV 処理用の Rust 製 CLI ツール", long_about = None)]
-pub(crate) struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
 }
@@ -66,7 +67,7 @@ pub(crate) struct Cli {
 /// variant 間のサイズ差は実害がない (large_enum_variant は許容)
 #[derive(Subcommand, Debug)]
 #[allow(clippy::large_enum_variant)]
-pub(crate) enum Command {
+pub enum Command {
     /// 指定カラムを文字数保持でマスクする
     Mask(mask::MaskArgs),
     /// 指定カラムを文字置換する (全カラムオプションあり)

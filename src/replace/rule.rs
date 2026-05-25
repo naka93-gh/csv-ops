@@ -6,7 +6,7 @@ use std::fmt;
 /// ルール識別子
 /// エラーメッセージや統計出力でルールを特定するために使う
 #[derive(Debug, Clone)]
-pub(crate) struct RuleId {
+pub struct RuleId {
     pub index: usize,
     pub name: Option<String>,
 }
@@ -25,7 +25,7 @@ impl fmt::Display for RuleId {
 /// 単純置換は from を `regex::escape` でエスケープしてコンパイルするため、
 /// case_insensitive の扱いも正規表現側に一元化され、文字位置のズレが起きない
 #[derive(Debug)]
-pub(crate) enum CompiledRule {
+pub enum CompiledRule {
     /// 単純文字列置換 (部分一致)
     Simple {
         id: RuleId,

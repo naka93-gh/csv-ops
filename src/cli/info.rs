@@ -3,13 +3,14 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::info::InfoRequest;
+
+use crate::info::InfoRequest;
 
 use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops info` の引数
 #[derive(Args, Debug)]
-pub(crate) struct InfoArgs {
+pub struct InfoArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -28,7 +29,7 @@ pub(crate) struct InfoArgs {
 }
 
 /// info サブコマンドのエントリポイント
-pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     // 区切り文字は指定があればエイリアスを解決、なければ None (自動判定)
     let delimiter = match args.input_delimiter {
         Some(alias) => Some(parse_delimiter_alias(&alias)?),
@@ -44,7 +45,7 @@ pub(crate) fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
         quote,
     };
 
-    let report = csv_ops::info::run(request)?;
+    let report = crate::info::run(request)?;
     emit_report(&report, &args.stats_format, None)?;
     Ok(ExitCode::SUCCESS)
 }

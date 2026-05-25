@@ -23,7 +23,7 @@ impl ColumnRef {
 }
 
 /// ColumnRef のリストを、ヘッダーと照合して列インデックスのリストに解決する
-pub(crate) fn resolve_indices(
+pub fn resolve_indices(
     columns: &[ColumnRef],
     headers: Option<&StringRecord>,
 ) -> Result<Vec<usize>, TransformError> {
@@ -66,7 +66,7 @@ pub(crate) fn resolve_indices(
 
 /// 列インデックス列から O(1) lookup 用の bool ビットマップを作る
 /// サイズは max+1。空入力なら空ベクタを返す
-pub(crate) fn build_index_mask(list: &[usize]) -> Vec<bool> {
+pub fn build_index_mask(list: &[usize]) -> Vec<bool> {
     match list.iter().max() {
         Some(&max) => {
             let mut m = vec![false; max + 1];
@@ -81,7 +81,7 @@ pub(crate) fn build_index_mask(list: &[usize]) -> Vec<bool> {
 
 /// 列番号が len の範囲内かを行単位で検証する
 /// ヘッダー無し + 列番号指定では init で範囲チェックできないため、各行で呼ぶ
-pub(crate) fn ensure_in_range(
+pub fn ensure_in_range(
     indices: impl IntoIterator<Item = usize>,
     len: usize,
 ) -> Result<(), TransformError> {
@@ -98,7 +98,7 @@ pub(crate) fn ensure_in_range(
 
 /// 追加する出力列名が既存ヘッダーまたは他の追加列と衝突しないか検査する
 /// ヘッダー無し時は no-op (列名衝突は発生し得ない)
-pub(crate) fn check_output_conflicts<'a, I>(
+pub fn check_output_conflicts<'a, I>(
     headers: Option<&StringRecord>,
     new_cols: I,
 ) -> Result<(), TransformError>

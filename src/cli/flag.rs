@@ -3,14 +3,15 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::ColumnRef;
-use csv_ops::flag::{FlagRequest, RuleSource};
+
+use crate::column::ColumnRef;
+use crate::flag::{FlagRequest, RuleSource};
 
 use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops flag` の引数
 #[derive(Args, Debug)]
-pub(crate) struct FlagArgs {
+pub struct FlagArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -65,7 +66,7 @@ pub(crate) struct FlagArgs {
 }
 
 /// flag サブコマンドのエントリポイント
-pub(crate) fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
     // ルール指定の解決
     // --config が優先、なければ --pattern / -c / --out-col の CLI 引数モード
     let rules = match args.config {
@@ -101,7 +102,7 @@ pub(crate) fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = csv_ops::flag::run(request)?;
+    let stats = crate::flag::run(request)?;
     emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }

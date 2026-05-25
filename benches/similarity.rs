@@ -1,4 +1,5 @@
 // similarity サブコマンドのベンチマーク
+// 計測対象: `csv-ops similarity` を --dry-run で起動して 1 回実行単位の所要時間を測る
 // (辞書 10 / 100 エントリ) × (入力 小 1K 行 / 中 10K 行)
 //
 // 中ケースは辞書 × 入力で計算量が爆発するため、SIMILARITY_MEDIUM_ROWS (10K) を使う。
@@ -7,11 +8,11 @@
 mod common;
 
 use std::path::PathBuf;
+use std::process::Command;
 use std::time::Duration;
 
+use assert_cmd::cargo::CommandCargoExt;
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use csv_ops::ColumnRef;
-use csv_ops::similarity::{RuleSource, SimilarityRequest};
 use tempfile::TempDir;
 
 use common::{
@@ -42,6 +43,9 @@ fn bench_similarity(c: &mut Criterion) {
         })
         .collect();
 
+    // dry-run なので実際には書き込まれないが -o は必須
+    let unused_output = dir.path().join("unused.csv");
+
     for (dict_n, dict_path) in &dict_paths {
         let mut group = c.benchmark_group(format!("similarity/dict{}", dict_n));
         // 中ケースは 1 反復が長くなりやすいのでサンプル数と計測時間を絞る
@@ -52,25 +56,37 @@ fn bench_similarity(c: &mut Criterion) {
         for (rows, input) in &inputs {
             group.bench_with_input(BenchmarkId::from_parameter(rows), rows, |b, _| {
                 b.iter(|| {
-                    csv_ops::similarity::run(SimilarityRequest {
-                        rules: RuleSource::Inline {
-                            column: ColumnRef::Name("region".into()),
-                            dict: dict_path.clone(),
-                            out_col: "matched".into(),
-                            score_col: "score".into(),
-                            threshold: 0.6,
-                            normalize: vec!["nfkc".into(), "casefold".into(), "whitespace".into()],
-                            algorithm: "levenshtein".into(),
-                        },
-                        input: input.clone(),
-                        output: PathBuf::from("unused.csv"),
-                        input_encoding: "utf-8".into(),
-                        output_encoding: "utf-8".into(),
-                        delimiter: b',',
-                        has_headers: true,
-                        dry_run: true,
-                    })
-                    .expect("similarity 実行に失敗");
+                    let output = Command::cargo_bin("csv-ops")
+                        .expect("csv-ops bin not found")
+                        .args([
+                            "similarity",
+                            "-i",
+                            input.to_str().expect("input path"),
+                            "-o",
+                            unused_output.to_str().expect("output path"),
+                            "-c",
+                            "region",
+                            "--dict",
+                            dict_path.to_str().expect("dict path"),
+                            "--out-col",
+                            "matched",
+                            "--score-col",
+                            "score",
+                            "--threshold",
+                            "0.6",
+                            "--normalize",
+                            "nfkc,casefold,whitespace",
+                            "--algorithm",
+                            "levenshtein",
+                            "--dry-run",
+                        ])
+                        .output()
+                        .expect("spawn failed");
+                    assert!(
+                        output.status.success(),
+                        "similarity 実行に失敗: {}",
+                        String::from_utf8_lossy(&output.stderr)
+                    );
                 });
             });
         }

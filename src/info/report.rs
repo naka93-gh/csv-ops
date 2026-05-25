@@ -1,7 +1,7 @@
 use serde::Serialize;
 
-use crate::StatsReport;
 use crate::io::LineEnding;
+use crate::stats_report::StatsReport;
 
 /// info の解析結果
 /// JSON 出力は serde 由来。delimiter / quote は表示用文字列で持つ。

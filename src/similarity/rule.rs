@@ -8,7 +8,7 @@ use super::dict::Dictionary;
 /// compile 済みの similarity ルール
 /// 対象列はヘッダ照合で列インデックスへ解決済み、辞書はロード + 正規化済み
 #[derive(Debug)]
-pub(crate) struct CompiledSimilarityRule {
+pub struct CompiledSimilarityRule {
     /// マッチ対象の列インデックス (similarity は 1 列固定)
     pub column: usize,
     /// 正規化 + ロード済みの辞書

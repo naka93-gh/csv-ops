@@ -3,7 +3,7 @@ use crate::error::ConfigError;
 use super::rule::CompiledRule;
 
 /// 単純置換ルール間の静的衝突を検出する
-pub(crate) fn detect_static_collisions(
+pub fn detect_static_collisions(
     rules: &[CompiledRule],
     case_insensitive: bool,
 ) -> Result<(), ConfigError> {

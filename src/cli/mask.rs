@@ -6,14 +6,15 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use csv_ops::ColumnRef;
-use csv_ops::mask::{MaskRequest, MaskSource};
+
+use crate::column::ColumnRef;
+use crate::mask::{MaskRequest, MaskSource};
 
 use super::{emit_report, parse_delimiter_alias};
 
 /// `csv-ops mask` の引数
 #[derive(Args, Debug)]
-pub(crate) struct MaskArgs {
+pub struct MaskArgs {
     /// 入力ファイル
     #[arg(short = 'i', long)]
     pub input: PathBuf,
@@ -64,7 +65,7 @@ pub(crate) struct MaskArgs {
 }
 
 /// mask サブコマンドのエントリポイント
-pub(crate) fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
+pub fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
     // 列指定の解決
     // --config が優先、なければ -c の CLI 引数モード
     let source = match args.config {
@@ -97,7 +98,7 @@ pub(crate) fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = csv_ops::mask::run(request)?;
+    let stats = crate::mask::run(request)?;
     emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
     Ok(ExitCode::SUCCESS)
 }
