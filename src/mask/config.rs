@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use crate::column::ColumnRef;
-use crate::error::ConfigError;
+use crate::error::{ConfigError, validate_version};
 
 /// サポートする設定バージョン
 const SUPPORTED_VERSION: u32 = 1;
@@ -31,23 +31,11 @@ impl MaskConfig {
     /// TOML 文字列をパースして検証済みの MaskConfig を返す
     pub fn from_toml(text: &str) -> Result<Self, ConfigError> {
         let config: MaskConfig = toml::from_str(text)?;
-        config.validate_version()?;
+        validate_version(config.version, SUPPORTED_VERSION)?;
         if config.columns.is_empty() {
             return Err(ConfigError::Validation("columns が空です".to_string()));
         }
         Ok(config)
-    }
-
-    /// version フィールドの検証
-    fn validate_version(&self) -> Result<(), ConfigError> {
-        match self.version {
-            None => Err(ConfigError::VersionMissing),
-            Some(v) if v != SUPPORTED_VERSION => Err(ConfigError::UnsupportedVersion {
-                found: v,
-                supported: SUPPORTED_VERSION,
-            }),
-            Some(_) => Ok(()),
-        }
     }
 
     /// マスク対象の列指定

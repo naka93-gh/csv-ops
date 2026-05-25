@@ -68,6 +68,19 @@ pub enum ConfigError {
     RuleCollision { rules: Vec<String>, reason: String },
 }
 
+/// 設定ファイル / 辞書ファイルの version フィールドを検証する
+/// 未指定なら VersionMissing、サポート外なら UnsupportedVersion を返す
+pub(crate) fn validate_version(version: Option<u32>, supported: u32) -> Result<(), ConfigError> {
+    match version {
+        None => Err(ConfigError::VersionMissing),
+        Some(v) if v != supported => Err(ConfigError::UnsupportedVersion {
+            found: v,
+            supported,
+        }),
+        Some(_) => Ok(()),
+    }
+}
+
 /// 変換実行時エラー
 #[derive(Debug, Error)]
 pub enum TransformError {

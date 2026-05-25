@@ -6,7 +6,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::error::{ConfigError, CsvOpsError, DictError, EncodingError};
+use crate::error::{ConfigError, CsvOpsError, DictError, EncodingError, validate_version};
 use crate::io::detect_encoding;
 use crate::text::algorithm::Algorithm;
 use crate::text::normalize::NormalizeSet;
@@ -168,18 +168,7 @@ struct TomlEntry {
 fn load_toml(path: &Path) -> Result<Vec<DictEntry>, CsvOpsError> {
     let text = read_decoded(path)?;
     let dict: TomlDict = toml::from_str(&text).map_err(ConfigError::Parse)?;
-    // version は必須
-    match dict.version {
-        None => return Err(ConfigError::VersionMissing.into()),
-        Some(v) if v != DICT_VERSION => {
-            return Err(ConfigError::UnsupportedVersion {
-                found: v,
-                supported: DICT_VERSION,
-            }
-            .into());
-        }
-        Some(_) => {}
-    }
+    validate_version(dict.version, DICT_VERSION)?;
     let entries = dict
         .entries
         .into_iter()
