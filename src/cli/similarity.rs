@@ -7,18 +7,14 @@ use clap::Args;
 use crate::column::ColumnRef;
 use crate::similarity::{RuleSource, SimilarityRequest};
 
-use super::{emit_report, parse_delimiter_alias};
+use super::{CommonIoArgs, StatsOutputArgs, emit_report, parse_delimiter_alias};
 
 /// `csv-ops similarity` の引数
+/// delimiter は通常の CSV 区切り文字に加え、`--dict` に CSV 形式を渡した場合の辞書側にも適用される
 #[derive(Args, Debug)]
 pub struct SimilarityArgs {
-    /// 入力ファイル
-    #[arg(short = 'i', long)]
-    pub input: PathBuf,
-
-    /// 出力ファイル
-    #[arg(short = 'o', long)]
-    pub output: PathBuf,
+    #[command(flatten)]
+    pub io: CommonIoArgs,
 
     /// 設定ファイル (TOML)。指定時は -c / --dict 等は無視
     #[arg(long, value_name = "FILE")]
@@ -52,33 +48,8 @@ pub struct SimilarityArgs {
     #[arg(long, value_name = "LIST", default_value = "nfkc,casefold,whitespace")]
     pub normalize: String,
 
-    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
-    #[arg(long, default_value = "utf-8")]
-    pub input_encoding: String,
-
-    /// 出力エンコーディング (utf-8 / shift_jis / euc-jp)
-    #[arg(long, default_value = "utf-8")]
-    pub output_encoding: String,
-
-    /// 区切り文字 (comma / tab / pipe / semicolon)。CSV 形式の辞書にも適用される
-    #[arg(long, value_name = "ALIAS", default_value = "comma")]
-    pub delimiter: String,
-
-    /// ヘッダ行なし CSV
-    #[arg(long)]
-    pub no_headers: bool,
-
-    /// 出力ファイルへ書き込まず、統計のみ表示する
-    #[arg(long)]
-    pub dry_run: bool,
-
-    /// 統計の出力形式 (text / json)
-    #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub stats_format: String,
-
-    /// 統計の出力先ファイル (未指定なら標準出力)
-    #[arg(long, value_name = "PATH")]
-    pub stats_file: Option<PathBuf>,
+    #[command(flatten)]
+    pub stats: StatsOutputArgs,
 }
 
 /// similarity サブコマンドのエントリポイント
@@ -110,20 +81,24 @@ pub fn run(args: SimilarityArgs) -> Result<ExitCode, Box<dyn Error>> {
         }
     };
 
-    let delimiter = parse_delimiter_alias(&args.delimiter)?;
+    let delimiter = parse_delimiter_alias(&args.io.delimiter)?;
 
     let request = SimilarityRequest {
         rules,
-        input: args.input,
-        output: args.output,
-        input_encoding: args.input_encoding,
-        output_encoding: args.output_encoding,
+        input: args.io.input,
+        output: args.io.output,
+        input_encoding: args.io.input_encoding,
+        output_encoding: args.io.output_encoding,
         delimiter,
-        has_headers: !args.no_headers,
-        dry_run: args.dry_run,
+        has_headers: !args.io.no_headers,
+        dry_run: args.io.dry_run,
     };
 
     let stats = crate::similarity::run(request)?;
-    emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
+    emit_report(
+        &stats,
+        &args.stats.stats_format,
+        args.stats.stats_file.as_deref(),
+    )?;
     Ok(ExitCode::SUCCESS)
 }

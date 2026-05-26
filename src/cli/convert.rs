@@ -6,7 +6,7 @@ use clap::Args;
 
 use crate::convert::ConvertRequest;
 
-use super::{emit_report, parse_delimiter_alias};
+use super::{StatsOutputArgs, emit_report, parse_delimiter_alias};
 
 /// `csv-ops convert` の引数
 #[derive(Args, Debug)]
@@ -39,13 +39,8 @@ pub struct ConvertArgs {
     #[arg(long)]
     pub dry_run: bool,
 
-    /// 統計の出力形式 (text / json)
-    #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub stats_format: String,
-
-    /// 統計の出力先ファイル (未指定なら標準出力)
-    #[arg(long, value_name = "PATH")]
-    pub stats_file: Option<PathBuf>,
+    #[command(flatten)]
+    pub stats: StatsOutputArgs,
 }
 
 /// convert サブコマンドのエントリポイント
@@ -61,6 +56,10 @@ pub fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::convert::run(request)?;
-    emit_report(&stats, &args.stats_format, args.stats_file.as_deref())?;
+    emit_report(
+        &stats,
+        &args.stats.stats_format,
+        args.stats.stats_file.as_deref(),
+    )?;
     Ok(ExitCode::SUCCESS)
 }
