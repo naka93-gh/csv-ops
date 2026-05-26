@@ -3,9 +3,10 @@
 
 use std::error::Error;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 use crate::stats_report::StatsReport;
 
@@ -16,6 +17,51 @@ pub mod info;
 pub mod mask;
 pub mod replace;
 pub mod similarity;
+
+/// 5 サブコマンド (mask/replace/flag/extract/similarity) で共有する入出力系の引数
+#[derive(Args, Debug)]
+pub struct CommonIoArgs {
+    /// 入力ファイル
+    #[arg(short = 'i', long)]
+    pub input: PathBuf,
+
+    /// 出力ファイル
+    #[arg(short = 'o', long)]
+    pub output: PathBuf,
+
+    /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
+    #[arg(long, default_value = "utf-8")]
+    pub input_encoding: String,
+
+    /// 出力エンコーディング (utf-8 / shift_jis / euc-jp)
+    #[arg(long, default_value = "utf-8")]
+    pub output_encoding: String,
+
+    /// 区切り文字 (comma / tab / pipe / semicolon)
+    #[arg(long, value_name = "ALIAS", default_value = "comma")]
+    pub delimiter: String,
+
+    /// ヘッダ行なし CSV
+    #[arg(long)]
+    pub no_headers: bool,
+
+    /// 出力ファイルへ書き込まず、統計のみ表示する
+    #[arg(long)]
+    pub dry_run: bool,
+}
+
+/// 統計出力先 (stats_format / stats_file) の共通引数
+/// convert を含む 6 サブコマンドで使う
+#[derive(Args, Debug)]
+pub struct StatsOutputArgs {
+    /// 統計の出力形式 (text / json)
+    #[arg(long, value_name = "FORMAT", default_value = "text")]
+    pub stats_format: String,
+
+    /// 統計の出力先ファイル (未指定なら標準出力)
+    #[arg(long, value_name = "PATH")]
+    pub stats_file: Option<PathBuf>,
+}
 
 /// 統計／メタ情報レポートを指定形式でフォーマットして出力する
 /// `file` 指定時はそのパスへ、未指定時は標準出力へ書く
