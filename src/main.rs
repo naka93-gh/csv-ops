@@ -13,6 +13,7 @@ mod io;
 mod mask;
 mod pipeline;
 mod replace;
+mod rule_id;
 mod similarity;
 mod stats;
 mod stats_report;

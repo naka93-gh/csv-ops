@@ -1,7 +1,7 @@
 // detect_static_collisions の単体テスト
 
 use super::*;
-use crate::replace::rule::RuleId;
+use crate::rule_id::RuleId;
 
 fn simple(index: usize, from: &str) -> CompiledRule {
     CompiledRule::Simple {

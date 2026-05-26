@@ -1,8 +1,9 @@
 use serde::Deserialize;
 
 use crate::error::{ConfigError, CsvOpsError, TransformError, validate_version};
+use crate::rule_id::RuleId;
 
-use super::rule::{CompiledRule, RuleId};
+use super::rule::CompiledRule;
 
 /// サポートする設定バージョン
 const SUPPORTED_VERSION: u32 = 1;
