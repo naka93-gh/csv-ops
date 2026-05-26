@@ -1,24 +1,7 @@
 // compile 済みルールの内部表現
 // 単純置換と正規表現を enum で統一、衝突検出と置換実行の両方で使う
 
-use std::fmt;
-
-/// ルール識別子
-/// エラーメッセージや統計出力でルールを特定するために使う
-#[derive(Debug, Clone)]
-pub struct RuleId {
-    pub index: usize,
-    pub name: Option<String>,
-}
-
-impl fmt::Display for RuleId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.name {
-            Some(name) => write!(f, "rule[{}] \"{}\"", self.index, name),
-            None => write!(f, "rule[{}]", self.index),
-        }
-    }
-}
+use crate::rule_id::RuleId;
 
 /// compile 済みのルール
 /// 単純置換・正規表現どちらもマッチ判定は正規表現に統一している

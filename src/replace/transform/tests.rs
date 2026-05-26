@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::column::ColumnRef;
-use crate::replace::rule::RuleId;
+use crate::rule_id::RuleId;
 use crate::stats::Stats;
 
 /// 単純置換ルールを作る (from をエスケープしてマッチャ化)
