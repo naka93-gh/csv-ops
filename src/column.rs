@@ -20,6 +20,12 @@ impl ColumnRef {
             Err(_) => ColumnRef::Name(s.to_string()),
         }
     }
+
+    /// カンマ区切りの CLI 文字列を ColumnRef のリストへ分解する
+    /// 各要素は trim してから parse する。空要素 ("a,,b") は除外せず、空列名として残す
+    pub fn parse_csv_list(s: &str) -> Vec<ColumnRef> {
+        s.split(',').map(|x| ColumnRef::parse(x.trim())).collect()
+    }
 }
 
 /// ColumnRef のリストを、ヘッダーと照合して列インデックスのリストに解決する
@@ -122,6 +128,45 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_csv_list_mixed_name_and_index() {
+        let v = ColumnRef::parse_csv_list("name, 2 ,id");
+        assert_eq!(v.len(), 3);
+        match &v[0] {
+            ColumnRef::Name(s) => assert_eq!(s, "name"),
+            other => panic!("想定外: {:?}", other),
+        }
+        match &v[1] {
+            ColumnRef::Index(i) => assert_eq!(*i, 2),
+            other => panic!("想定外: {:?}", other),
+        }
+        match &v[2] {
+            ColumnRef::Name(s) => assert_eq!(s, "id"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_csv_list_keeps_empty_elements() {
+        // split(',') の挙動を維持: 連続カンマは空要素として残る
+        let v = ColumnRef::parse_csv_list("a,,b");
+        assert_eq!(v.len(), 3);
+        match &v[1] {
+            ColumnRef::Name(s) => assert_eq!(s, ""),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_csv_list_single() {
+        let v = ColumnRef::parse_csv_list("col1");
+        assert_eq!(v.len(), 1);
+        match &v[0] {
+            ColumnRef::Name(s) => assert_eq!(s, "col1"),
+            other => panic!("想定外: {:?}", other),
+        }
+    }
 
     #[test]
     fn build_index_mask_empty() {

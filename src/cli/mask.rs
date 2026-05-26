@@ -74,10 +74,7 @@ pub fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
             let cols = args
                 .columns
                 .ok_or("--config か -c <列> のいずれかを指定してください")?;
-            let columns: Vec<ColumnRef> = cols
-                .split(',')
-                .map(|s| ColumnRef::parse(s.trim()))
-                .collect();
+            let columns = ColumnRef::parse_csv_list(&cols);
             let mask_char = args
                 .mask_char
                 .chars()

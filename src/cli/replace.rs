@@ -108,13 +108,7 @@ pub fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
         (None, false) => {
             return Err("-c <列> か --all-columns のいずれかを指定してください".into());
         }
-        (Some(cols), false) => {
-            let refs = cols
-                .split(',')
-                .map(|s| ColumnRef::parse(s.trim()))
-                .collect();
-            ColumnTarget::Specified(refs)
-        }
+        (Some(cols), false) => ColumnTarget::Specified(ColumnRef::parse_csv_list(&cols)),
         (None, true) => ColumnTarget::All,
     };
 
