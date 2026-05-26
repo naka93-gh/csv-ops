@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use clap::Args;
 
-use crate::convert::ConvertRequest;
+use crate::commands::convert::ConvertRequest;
 
 use super::{StatsOutputArgs, emit_report, parse_delimiter_alias};
 
@@ -55,7 +55,7 @@ pub fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.dry_run,
     };
 
-    let stats = crate::convert::run(request)?;
+    let stats = crate::commands::convert::run(request)?;
     emit_report(
         &stats,
         &args.stats.stats_format,

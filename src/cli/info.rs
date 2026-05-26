@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use clap::Args;
 
-use crate::info::InfoRequest;
+use crate::commands::info::InfoRequest;
 
 use super::{emit_report, parse_delimiter_alias};
 
@@ -45,7 +45,7 @@ pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
         quote,
     };
 
-    let report = crate::info::run(request)?;
+    let report = crate::commands::info::run(request)?;
     emit_report(&report, &args.stats_format, None)?;
     Ok(ExitCode::SUCCESS)
 }

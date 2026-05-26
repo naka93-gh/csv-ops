@@ -5,7 +5,7 @@ use std::process::ExitCode;
 use clap::Args;
 
 use crate::column::ColumnRef;
-use crate::extract::{ExtractRequest, RuleSource};
+use crate::commands::extract::{ExtractRequest, RuleSource};
 
 use super::{CommonIoArgs, StatsOutputArgs, emit_report, parse_delimiter_alias};
 
@@ -73,7 +73,7 @@ pub fn run(args: ExtractArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.io.dry_run,
     };
 
-    let stats = crate::extract::run(request)?;
+    let stats = crate::commands::extract::run(request)?;
     emit_report(
         &stats,
         &args.stats.stats_format,

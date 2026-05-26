@@ -5,7 +5,7 @@ use std::process::ExitCode;
 use clap::Args;
 
 use crate::column::ColumnRef;
-use crate::similarity::{RuleSource, SimilarityRequest};
+use crate::commands::similarity::{RuleSource, SimilarityRequest};
 
 use super::{CommonIoArgs, StatsOutputArgs, emit_report, parse_delimiter_alias};
 
@@ -37,7 +37,7 @@ pub struct SimilarityArgs {
     pub score_col: String,
 
     /// マッチとみなすしきい値 (0.0-1.0)
-    #[arg(long, default_value_t = crate::similarity::DEFAULT_THRESHOLD)]
+    #[arg(long, default_value_t = crate::commands::similarity::DEFAULT_THRESHOLD)]
     pub threshold: f64,
 
     /// 類似度アルゴリズム (levenshtein / damerau / jaro-winkler / dice)
@@ -94,7 +94,7 @@ pub fn run(args: SimilarityArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.io.dry_run,
     };
 
-    let stats = crate::similarity::run(request)?;
+    let stats = crate::commands::similarity::run(request)?;
     emit_report(
         &stats,
         &args.stats.stats_format,
