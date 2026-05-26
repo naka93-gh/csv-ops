@@ -77,10 +77,7 @@ pub fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
                 .ok_or("--config か --pattern / -c / --out-col のいずれかを指定してください")?;
             let cols = args.columns.ok_or("-c <列> が必要です")?;
             let out_col = args.out_col.ok_or("--out-col が必要です")?;
-            let columns = cols
-                .split(',')
-                .map(|s| ColumnRef::parse(s.trim()))
-                .collect();
+            let columns = ColumnRef::parse_csv_list(&cols);
             RuleSource::Inline {
                 pattern,
                 columns,
