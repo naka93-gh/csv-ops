@@ -34,7 +34,7 @@ pub struct RuleStat {
 impl Stats {
     /// per_rule を id 列から 0 初期化する
     /// replace では rule[N] "name" 形式、flag / extract / similarity では out_col を ID として渡す
-    pub fn with_rule_ids(ids: Vec<String>) -> Self {
+    pub fn with_rule_ids<I: IntoIterator<Item = String>>(ids: I) -> Self {
         let per_rule = ids
             .into_iter()
             .map(|id| RuleStat {

@@ -53,8 +53,7 @@ impl RecordTransform for SimilarityTransform {
         )?;
 
         // 統計を out_col 一覧で初期化する (per_rule は ID 列で 0 初期化)
-        let out_cols: Vec<String> = self.compiled.iter().map(|r| r.out_col.clone()).collect();
-        self.stats = Stats::with_rule_ids(out_cols);
+        self.stats = Stats::with_rule_ids(self.compiled.iter().map(|r| r.out_col.clone()));
 
         // ヘッダーがあれば既存カラム + ルール毎の out_col / score_col を出力ヘッダーとする
         match headers {

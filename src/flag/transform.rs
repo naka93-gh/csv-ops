@@ -41,14 +41,13 @@ impl RecordTransform for FlagTransform {
         check_output_conflicts(headers, self.compiled.iter().map(|r| r.out_col.as_str()))?;
 
         // 統計を out_col 一覧で初期化する (per_rule は ID 列で 0 初期化)
-        let out_cols: Vec<String> = self.compiled.iter().map(|r| r.out_col.clone()).collect();
-        self.stats = Stats::with_rule_ids(out_cols.clone());
+        self.stats = Stats::with_rule_ids(self.compiled.iter().map(|r| r.out_col.clone()));
 
         // ヘッダーがあれば既存カラム + 各ルールの out_col を出力ヘッダーとする
         match headers {
             Some(h) => {
                 let mut extended: Vec<String> = h.iter().map(|s| s.to_string()).collect();
-                extended.extend(out_cols);
+                extended.extend(self.compiled.iter().map(|r| r.out_col.clone()));
                 Ok(Some(StringRecord::from(extended)))
             }
             None => Ok(None),
