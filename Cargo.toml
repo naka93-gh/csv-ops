@@ -2,7 +2,7 @@
 name = "csv-ops"
 version = "0.1.2"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.95"
 authors = ["naka93-gh"]
 description = "CSV 処理用の Rust 製 CLI ツール"
 license = "MIT OR Apache-2.0"

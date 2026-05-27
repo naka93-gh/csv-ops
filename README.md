@@ -4,7 +4,7 @@
 [![Release](https://github.com/naka93-gh/csv-ops/actions/workflows/release.yml/badge.svg)](https://github.com/naka93-gh/csv-ops/actions/workflows/release.yml)
 [![GitHub release](https://img.shields.io/github/v/release/naka93-gh/csv-ops)](https://github.com/naka93-gh/csv-ops/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/naka93-gh/csv-ops/total)](https://github.com/naka93-gh/csv-ops/releases)
-[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue)](https://www.rust-lang.org/)
+[![MSRV](https://img.shields.io/badge/MSRV-1.95-blue)](https://www.rust-lang.org/)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#ライセンス)
 
 CSV 処理用の Rust 製 CLI ツール。

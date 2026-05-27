@@ -14,7 +14,7 @@ csv-ops の変更履歴。
 
 ### 追加
 
-- MSRV (`rust-version`) を `1.85` として `Cargo.toml` に明示 (edition 2024 の要求最小値)
+- MSRV (`rust-version`) を `1.95` として `Cargo.toml` に明示
 
 [0.1.2]: https://github.com/naka93-gh/csv-ops/releases/tag/v0.1.2
 
