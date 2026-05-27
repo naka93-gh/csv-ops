@@ -46,6 +46,6 @@ pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let report = crate::commands::info::run(request)?;
-    emit_report(&report, &args.stats_format, None)?;
+    emit_report(&report, &args.stats_format)?;
     Ok(ExitCode::SUCCESS)
 }

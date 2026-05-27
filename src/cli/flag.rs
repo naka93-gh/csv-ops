@@ -69,10 +69,6 @@ pub fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::flag::run(request)?;
-    emit_report(
-        &stats,
-        &args.stats.stats_format,
-        args.stats.stats_file.as_deref(),
-    )?;
+    emit_report(&stats, &args.stats.stats_format)?;
     Ok(ExitCode::SUCCESS)
 }
