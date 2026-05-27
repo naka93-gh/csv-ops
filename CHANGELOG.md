@@ -6,6 +6,18 @@ csv-ops の変更履歴。
 バージョニングは [Semantic Versioning](https://semver.org/lang/ja/) に従う
 （v0.x 期間はマイナーで機能追加・破壊的変更の双方を許容する）。
 
+## [0.1.2] - 2026-05-27
+
+### 破壊的変更
+
+- ライブラリ兼用を廃止し純 CLI 構成に統一 (#12)。`csv_ops::*` を Rust コードから直接呼ぶ用途は使えなくなった。利用側は `std::process::Command::new("csv-ops").args([...])` でプロセス起動する形に切り替える必要あり。crates.io 0.1.1 まではライブラリ利用可、0.1.2 以降は CLI のみ (外部利用者ゼロを確認済み、実害は限定的)
+
+### 追加
+
+- MSRV (`rust-version`) を `1.95` として `Cargo.toml` に明示
+
+[0.1.2]: https://github.com/naka93-gh/csv-ops/releases/tag/v0.1.2
+
 ## [0.1.1] - 2026-05-25
 
 ### 破壊的変更
