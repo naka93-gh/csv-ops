@@ -4,17 +4,11 @@ use clap::Parser;
 
 mod cli;
 mod column;
-mod convert;
+mod commands;
 mod error;
-mod extract;
-mod flag;
-mod info;
 mod io;
-mod mask;
 mod pipeline;
-mod replace;
 mod rule_id;
-mod similarity;
 mod stats;
 mod stats_report;
 mod text;

@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use clap::Args;
 
 use crate::column::ColumnRef;
-use crate::mask::{MaskRequest, MaskSource};
+use crate::commands::mask::{MaskRequest, MaskSource};
 
 use super::{CommonIoArgs, StatsOutputArgs, emit_report, parse_delimiter_alias};
 
@@ -65,7 +65,7 @@ pub fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
         dry_run: args.io.dry_run,
     };
 
-    let stats = crate::mask::run(request)?;
+    let stats = crate::commands::mask::run(request)?;
     emit_report(
         &stats,
         &args.stats.stats_format,
