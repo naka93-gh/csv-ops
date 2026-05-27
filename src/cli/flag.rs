@@ -63,7 +63,6 @@ pub fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
         input: args.io.input,
         output: args.io.output,
         input_encoding: args.io.input_encoding,
-        output_encoding: args.io.output_encoding,
         delimiter,
         has_headers: !args.io.no_headers,
         dry_run: args.io.dry_run,

@@ -203,14 +203,7 @@ fn shift_jis_round_trip() {
         .arg(&input)
         .arg("-o")
         .arg(&output)
-        .args([
-            "-c",
-            "氏名",
-            "--input-encoding",
-            "shift_jis",
-            "--output-encoding",
-            "shift_jis",
-        ])
+        .args(["-c", "氏名", "--input-encoding", "shift_jis"])
         .assert()
         .success();
 

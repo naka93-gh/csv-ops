@@ -183,8 +183,11 @@ fn flag_sjis_input() {
         .assert()
         .success();
 
-    let out = std::fs::read_to_string(&output).unwrap();
-    assert_eq!(out, "name,city,f\n田中,東京,true\n");
+    // 出力は入力と同一の SJIS でデコードして検証
+    let out_bytes = std::fs::read(&output).unwrap();
+    let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&out_bytes);
+    assert!(!had_errors);
+    assert_eq!(decoded, "name,city,f\n田中,東京,true\n");
 }
 
 #[test]

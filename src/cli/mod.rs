@@ -30,12 +30,9 @@ pub struct CommonIoArgs {
     pub output: PathBuf,
 
     /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
+    /// 出力エンコーディングは入力と同一になる
     #[arg(long, default_value = "utf-8")]
     pub input_encoding: String,
-
-    /// 出力エンコーディング (utf-8 / shift_jis / euc-jp)
-    #[arg(long, default_value = "utf-8")]
-    pub output_encoding: String,
 
     /// 区切り文字 (comma / tab / pipe / semicolon)
     #[arg(long, value_name = "ALIAS", default_value = "comma")]

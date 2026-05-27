@@ -59,7 +59,6 @@ pub fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
         input: args.io.input,
         output: args.io.output,
         input_encoding: args.io.input_encoding,
-        output_encoding: args.io.output_encoding,
         delimiter: parse_delimiter_alias(&args.io.delimiter)?,
         has_headers: !args.io.no_headers,
         dry_run: args.io.dry_run,

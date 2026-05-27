@@ -69,7 +69,7 @@ fn replace_config_mode() {
     );
 }
 
-/// SJIS 入力を読み UTF-8 で出力できる
+/// SJIS 入力は SJIS のまま書き出す
 #[test]
 fn replace_sjis_input() {
     let dir = tempfile::tempdir().unwrap();
@@ -96,37 +96,7 @@ fn replace_sjis_input() {
         ])
         .assert()
         .success();
-    // 出力はデフォルト UTF-8
-    assert_eq!(
-        std::fs::read_to_string(&output).unwrap(),
-        "name,status\n田中,open\n"
-    );
-}
-
-/// UTF-8 入力を SJIS で出力できる
-#[test]
-fn replace_sjis_output() {
-    let (dir, input) = setup("name,status\n田中,未対応\n");
-    let output = dir.path().join("out.csv");
-    csv_ops()
-        .arg("replace")
-        .arg("-i")
-        .arg(&input)
-        .arg("-o")
-        .arg(&output)
-        .args([
-            "-c",
-            "status",
-            "--from",
-            "未対応",
-            "--to",
-            "open",
-            "--output-encoding",
-            "shift_jis",
-        ])
-        .assert()
-        .success();
-    // 出力ファイルを SJIS としてデコードして検証
+    // 出力は入力と同一の SJIS でデコードして検証
     let out_bytes = std::fs::read(&output).unwrap();
     let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&out_bytes);
     assert!(!had_errors);
