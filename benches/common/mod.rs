@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::Path;
 
-use rand::{Rng, SeedableRng, rngs::SmallRng};
+use rand::{RngExt, SeedableRng, rngs::SmallRng};
 
 /// 小ケース (1K 行)
 pub const SMALL_ROWS: usize = 1_000;
