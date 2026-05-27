@@ -16,7 +16,7 @@ csv-ops info -i <IN> [options]
 | オプション                  | 既定値   | 説明                                               |
 | --------------------------- | -------- | -------------------------------------------------- |
 | `-i`, `--input <IN>`        | -        | 入力ファイル                                       |
-| `--stats-format <FORMAT>`   | `text`   | 統計出力形式（text / json）                        |
+| `--json`                    | off      | 統計を JSON 形式で出力                             |
 | `--input-delimiter <ALIAS>` | 自動判定 | 区切り文字（comma / tab / pipe / semicolon）       |
 | `--input-quote <CHAR>`      | `"`      | クォート文字                                       |
 
@@ -76,7 +76,7 @@ Headers:     氏名, 年齢, 部署
 ### JSON 形式で出力
 
 ```
-csv-ops info -i data.csv --stats-format json
+csv-ops info -i data.csv --json
 ```
 
 ## 備考
