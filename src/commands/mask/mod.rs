@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
-use crate::io::{resolve_encoding, resolve_input_encoding};
+use crate::io::resolve_input_encoding;
 use crate::pipeline::{PipelineOptions, run_pipeline};
 use crate::stats::Stats;
 
@@ -33,9 +33,8 @@ pub struct MaskRequest {
     /// 出力ファイルパス
     pub output: PathBuf,
     /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp / auto)
+    /// 出力は入力と同一エンコーディングで書き出す
     pub input_encoding: String,
-    /// 出力エンコーディング名
-    pub output_encoding: String,
     /// 区切り文字
     pub delimiter: u8,
     /// ヘッダー行の有無
@@ -52,7 +51,6 @@ pub fn run(request: MaskRequest) -> Result<Stats, CsvOpsError> {
         input,
         output,
         input_encoding,
-        output_encoding,
         delimiter,
         has_headers,
         dry_run,
@@ -69,15 +67,15 @@ pub fn run(request: MaskRequest) -> Result<Stats, CsvOpsError> {
     };
 
     // 入力エンコーディングは auto 指定ならファイル先頭から推定する
+    // 出力は入力と同一エンコーディングで書き出す
     let input_encoding = resolve_input_encoding(&input_encoding, &input)?;
-    let output_encoding = resolve_encoding(&output_encoding)?;
 
     let mut transform = MaskTransform::new(columns, mask_char);
     let opts = PipelineOptions {
         input,
         output,
         input_encoding,
-        output_encoding,
+        output_encoding: input_encoding,
         // mask は内容のみ変換するので入出力で区切り文字は同一
         input_delimiter: delimiter,
         output_delimiter: delimiter,

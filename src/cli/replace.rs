@@ -89,7 +89,6 @@ pub fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
         input: args.io.input,
         output: args.io.output,
         input_encoding: args.io.input_encoding,
-        output_encoding: args.io.output_encoding,
         delimiter,
         has_headers: !args.io.no_headers,
         case_insensitive: args.case_insensitive,
@@ -98,10 +97,6 @@ pub fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::replace::run(request)?;
-    emit_report(
-        &stats,
-        &args.stats.stats_format,
-        args.stats.stats_file.as_deref(),
-    )?;
+    emit_report(&stats, args.stats.json, args.stats.quiet)?;
     Ok(ExitCode::SUCCESS)
 }

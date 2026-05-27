@@ -209,9 +209,12 @@ fn extract_sjis_input() {
         .assert()
         .success();
 
-    let out = std::fs::read_to_string(&output).unwrap();
+    // 出力は入力と同一の SJIS でデコードして検証
+    let out_bytes = std::fs::read(&output).unwrap();
+    let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&out_bytes);
+    assert!(!had_errors);
     assert_eq!(
-        out,
+        decoded,
         "name,memo,phone\n田中,電話 03-1234-5678,03-1234-5678\n"
     );
 }
@@ -230,7 +233,7 @@ fn extract_json_stats() {
         .arg("-o")
         .arg(&output)
         .args(["-c", "memo", "--pattern", r"\d+", "--out-col", "num"])
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_processed\": 2"))

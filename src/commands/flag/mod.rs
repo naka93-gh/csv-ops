@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use crate::column::ColumnRef;
 use crate::error::CsvOpsError;
-use crate::io::{resolve_encoding, resolve_input_encoding};
+use crate::io::resolve_input_encoding;
 use crate::pipeline::{PipelineOptions, run_pipeline};
 use crate::stats::Stats;
 
@@ -36,9 +36,8 @@ pub struct FlagRequest {
     /// 出力ファイルパス
     pub output: PathBuf,
     /// 入力エンコーディング名 (utf-8 / shift_jis / euc-jp / auto)
+    /// 出力は入力と同一エンコーディングで書き出す
     pub input_encoding: String,
-    /// 出力エンコーディング名
-    pub output_encoding: String,
     /// 区切り文字
     pub delimiter: u8,
     /// ヘッダー行の有無
@@ -54,7 +53,6 @@ pub fn run(request: FlagRequest) -> Result<Stats, CsvOpsError> {
         input,
         output,
         input_encoding,
-        output_encoding,
         delimiter,
         has_headers,
         dry_run,
@@ -74,8 +72,8 @@ pub fn run(request: FlagRequest) -> Result<Stats, CsvOpsError> {
     };
 
     // 入力エンコーディングは auto 指定ならファイル先頭から推定する
+    // 出力は入力と同一エンコーディングで書き出す
     let input_encoding = resolve_input_encoding(&input_encoding, &input)?;
-    let output_encoding = resolve_encoding(&output_encoding)?;
 
     // ルールの compile・列解決・統計集計は FlagTransform が担う
     let mut transform = FlagTransform::new(cfg);
@@ -83,7 +81,7 @@ pub fn run(request: FlagRequest) -> Result<Stats, CsvOpsError> {
         input,
         output,
         input_encoding,
-        output_encoding,
+        output_encoding: input_encoding,
         // flag は列を追加するだけで区切り文字は変えない
         input_delimiter: delimiter,
         output_delimiter: delimiter,

@@ -2,7 +2,6 @@
 // 各サブコマンドの引数定義は子モジュールで持ち、ここでは Cli/Command の集約と dispatch を行う
 
 use std::error::Error;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -30,12 +29,9 @@ pub struct CommonIoArgs {
     pub output: PathBuf,
 
     /// 入力エンコーディング (utf-8 / shift_jis / euc-jp / auto)
+    /// 出力エンコーディングは入力と同一になる
     #[arg(long, default_value = "utf-8")]
     pub input_encoding: String,
-
-    /// 出力エンコーディング (utf-8 / shift_jis / euc-jp)
-    #[arg(long, default_value = "utf-8")]
-    pub output_encoding: String,
 
     /// 区切り文字 (comma / tab / pipe / semicolon)
     #[arg(long, value_name = "ALIAS", default_value = "comma")]
@@ -50,37 +46,34 @@ pub struct CommonIoArgs {
     pub dry_run: bool,
 }
 
-/// 統計出力先 (stats_format / stats_file) の共通引数
-/// convert を含む 6 サブコマンドで使う
+/// 統計出力形式の共通引数 (convert を含む 6 サブコマンドで使う)
 #[derive(Args, Debug)]
 pub struct StatsOutputArgs {
-    /// 統計の出力形式 (text / json)
-    #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub stats_format: String,
+    /// 統計を JSON 形式で出力する (未指定なら text)
+    #[arg(long)]
+    pub json: bool,
 
-    /// 統計の出力先ファイル (未指定なら標準出力)
-    #[arg(long, value_name = "PATH")]
-    pub stats_file: Option<PathBuf>,
+    /// 統計出力を抑制する
+    #[arg(long)]
+    pub quiet: bool,
 }
 
-/// 統計／メタ情報レポートを指定形式でフォーマットして出力する
-/// `file` 指定時はそのパスへ、未指定時は標準出力へ書く
-/// text/json いずれも末尾改行を 1 つ付与した内容で書く
+/// 統計／メタ情報レポートを指定形式でフォーマットし標準出力へ書く
+/// quiet 指定時は何も出さない
 pub fn emit_report<R: StatsReport>(
     report: &R,
-    format: &str,
-    file: Option<&Path>,
+    json: bool,
+    quiet: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let body = match format {
-        "json" => report.to_json(),
-        "text" => report.to_text(),
-        other => return Err(format!("不明な出力形式: {} (text / json)", other).into()),
-    };
-    let formatted = format!("{}\n", body);
-    match file {
-        Some(path) => std::fs::write(path, formatted)?,
-        None => print!("{}", formatted),
+    if quiet {
+        return Ok(());
     }
+    let body = if json {
+        report.to_json()
+    } else {
+        report.to_text()
+    };
+    println!("{}", body);
     Ok(())
 }
 

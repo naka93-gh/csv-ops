@@ -39,13 +39,12 @@ csv-ops similarity -i <IN> -o <OUT> --config <FILE>
 | `--algorithm <NAME>`      | `levenshtein`              | 類似度アルゴリズム（後述）                                           |
 | `--normalize <LIST>`      | `nfkc,casefold,whitespace` | 正規化オプション（カンマ区切り）                                     |
 | `--config <FILE>`         | -                          | 設定ファイル (TOML)。指定時は `-c` / `--dict` 等は無視               |
-| `--input-encoding <ENC>`  | `utf-8`                    | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto）            |
-| `--output-encoding <ENC>` | `utf-8`                    | 出力エンコーディング                                                 |
+| `--input-encoding <ENC>`  | `utf-8`                    | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto）。出力は入力と同一 |
 | `--delimiter <ALIAS>`     | `comma`                    | 区切り文字（comma / tab / pipe / semicolon）。CSV 形式の辞書にも適用 |
 | `--no-headers`            | off                        | ヘッダ行なし CSV として扱う                                          |
 | `--dry-run`               | off                        | 出力ファイルへ書き込まず統計のみ表示                                 |
-| `--stats-format <FORMAT>` | `text`                     | 統計の出力形式（text / json）                                        |
-| `--stats-file <PATH>`     | 標準出力                   | 統計の出力先ファイル                                                 |
+| `--json`                  | off                        | 統計を JSON 形式で出力                                               |
+| `--quiet`                 | off                        | 統計出力を抑制                                                       |
 
 ## アルゴリズム
 

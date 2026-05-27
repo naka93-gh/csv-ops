@@ -149,9 +149,11 @@ fn similarity_sjis_input_and_dict() {
         .assert()
         .success();
 
-    // 出力は既定 UTF-8。辞書のエンコーディングは自動判定される
-    let out = std::fs::read_to_string(&output).unwrap();
-    assert!(out.contains("東京都"));
+    // 出力は入力と同一の SJIS。辞書のエンコーディングは自動判定される
+    let out_bytes = std::fs::read(&output).unwrap();
+    let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&out_bytes);
+    assert!(!had_errors);
+    assert!(decoded.contains("東京都"));
 }
 
 #[test]
@@ -194,7 +196,7 @@ fn similarity_json_stats() {
         .args(["-o".as_ref(), output.as_os_str()])
         .args(["-c", "name"])
         .args(["--dict".as_ref(), dict.as_os_str()])
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_affected\""));

@@ -24,13 +24,12 @@ csv-ops mask -i <IN> -o <OUT> --config <FILE>
 | `-c`, `--columns <COLUMNS>` | -        | 対象列（カンマ区切り、列名または列番号）           |
 | `--config <FILE>`           | -        | 設定ファイル (TOML)。指定時は `-c` / `--mask-char` は無視 |
 | `--mask-char <CHAR>`        | `*`      | マスク文字（先頭 1 文字を使用）                    |
-| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto） |
-| `--output-encoding <ENC>`   | `utf-8`  | 出力エンコーディング                               |
+| `--input-encoding <ENC>`    | `utf-8`  | 入力エンコーディング（utf-8 / shift_jis / euc-jp / auto）。出力は入力と同一 |
 | `--delimiter <ALIAS>`       | `comma`  | 区切り文字（comma / tab / pipe / semicolon）       |
 | `--no-headers`              | off      | ヘッダ行なし CSV として扱う                        |
 | `--dry-run`                 | off      | 出力ファイルへ書き込まず統計のみ表示               |
-| `--stats-format <FORMAT>`   | `text`   | 統計の出力形式（text / json）                      |
-| `--stats-file <PATH>`       | 標準出力 | 統計の出力先ファイル                               |
+| `--json`                    | off      | 統計を JSON 形式で出力                             |
+| `--quiet`                   | off      | 統計出力を抑制                                     |
 
 `columns` は列名（文字列）と列番号（0 始まりの整数）を混在指定できる。
 列番号は `--no-headers` のファイルでも使える。
