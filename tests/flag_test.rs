@@ -204,7 +204,7 @@ fn flag_json_stats() {
         .arg("-o")
         .arg(&output)
         .args(["-c", "city", "--pattern", "東京", "--out-col", "f"])
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_processed\": 2"))

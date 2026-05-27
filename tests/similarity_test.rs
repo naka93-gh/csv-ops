@@ -196,7 +196,7 @@ fn similarity_json_stats() {
         .args(["-o".as_ref(), output.as_os_str()])
         .args(["-c", "name"])
         .args(["--dict".as_ref(), dict.as_os_str()])
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_affected\""));

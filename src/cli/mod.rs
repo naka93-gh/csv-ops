@@ -49,17 +49,17 @@ pub struct CommonIoArgs {
 /// 統計出力形式の共通引数 (convert を含む 6 サブコマンドで使う)
 #[derive(Args, Debug)]
 pub struct StatsOutputArgs {
-    /// 統計の出力形式 (text / json)
-    #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub stats_format: String,
+    /// 統計を JSON 形式で出力する (未指定なら text)
+    #[arg(long)]
+    pub json: bool,
 }
 
 /// 統計／メタ情報レポートを指定形式でフォーマットし標準出力へ書く
-pub fn emit_report<R: StatsReport>(report: &R, format: &str) -> Result<(), Box<dyn Error>> {
-    let body = match format {
-        "json" => report.to_json(),
-        "text" => report.to_text(),
-        other => return Err(format!("不明な出力形式: {} (text / json)", other).into()),
+pub fn emit_report<R: StatsReport>(report: &R, json: bool) -> Result<(), Box<dyn Error>> {
+    let body = if json {
+        report.to_json()
+    } else {
+        report.to_text()
     };
     println!("{}", body);
     Ok(())

@@ -307,7 +307,7 @@ fn stats_json_format() {
         .arg(&input)
         .arg("-o")
         .arg(&output)
-        .args(["-c", "a", "--stats-format", "json"])
+        .args(["-c", "a", "--json"])
         .assert()
         .success()
         .stdout(predicate::str::contains("\"changes_total\": 1"));

@@ -97,7 +97,7 @@ fn json_format_is_valid() {
     let output = csv_ops()
         .args(["info", "-i"])
         .arg(&input)
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .get_output()
@@ -114,20 +114,6 @@ fn json_format_is_valid() {
 fn missing_file_fails() {
     csv_ops()
         .args(["info", "-i", "/nonexistent/path/data.csv"])
-        .assert()
-        .failure();
-}
-
-#[test]
-fn invalid_format_fails() {
-    let dir = tempdir().unwrap();
-    let input = dir.path().join("data.csv");
-    std::fs::write(&input, "a,b\n1,2\n").unwrap();
-
-    csv_ops()
-        .args(["info", "-i"])
-        .arg(&input)
-        .args(["--stats-format", "xml"])
         .assert()
         .failure();
 }

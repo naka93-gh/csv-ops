@@ -56,6 +56,6 @@ pub fn run(args: ConvertArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::convert::run(request)?;
-    emit_report(&stats, &args.stats.stats_format)?;
+    emit_report(&stats, args.stats.json)?;
     Ok(ExitCode::SUCCESS)
 }

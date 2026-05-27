@@ -176,7 +176,7 @@ fn replace_dry_run_skips_output() {
     assert!(!output.exists(), "dry-run では出力ファイルを作らない");
 }
 
-/// --stats-format json で JSON 統計が出力される
+/// --json で JSON 統計が出力される
 #[test]
 fn replace_json_stats() {
     let (dir, input) = setup("name,status\n田中,未対応\n");
@@ -187,16 +187,7 @@ fn replace_json_stats() {
         .arg(&input)
         .arg("-o")
         .arg(&output)
-        .args([
-            "-c",
-            "status",
-            "--from",
-            "未対応",
-            "--to",
-            "open",
-            "--stats-format",
-            "json",
-        ])
+        .args(["-c", "status", "--from", "未対応", "--to", "open", "--json"])
         .assert()
         .success()
         .stdout(predicate::str::contains("\"rows_processed\""));

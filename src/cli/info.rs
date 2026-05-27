@@ -15,9 +15,9 @@ pub struct InfoArgs {
     #[arg(short = 'i', long)]
     pub input: PathBuf,
 
-    /// 統計出力形式 (text / json)
-    #[arg(long, value_name = "FORMAT", default_value = "text")]
-    pub stats_format: String,
+    /// 統計を JSON 形式で出力する (未指定なら text)
+    #[arg(long)]
+    pub json: bool,
 
     /// 区切り文字 (comma / tab / pipe / semicolon)。未指定ならヘッダー行から自動判定
     #[arg(long, value_name = "ALIAS")]
@@ -46,6 +46,6 @@ pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let report = crate::commands::info::run(request)?;
-    emit_report(&report, &args.stats_format)?;
+    emit_report(&report, args.json)?;
     Ok(ExitCode::SUCCESS)
 }

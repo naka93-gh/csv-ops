@@ -97,6 +97,6 @@ pub fn run(args: ReplaceArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::replace::run(request)?;
-    emit_report(&stats, &args.stats.stats_format)?;
+    emit_report(&stats, args.stats.json)?;
     Ok(ExitCode::SUCCESS)
 }

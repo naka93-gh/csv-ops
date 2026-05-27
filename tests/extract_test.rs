@@ -233,7 +233,7 @@ fn extract_json_stats() {
         .arg("-o")
         .arg(&output)
         .args(["-c", "memo", "--pattern", r"\d+", "--out-col", "num"])
-        .args(["--stats-format", "json"])
+        .arg("--json")
         .assert()
         .success()
         .stdout(predicates::str::contains("\"rows_processed\": 2"))
