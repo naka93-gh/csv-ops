@@ -65,6 +65,6 @@ pub fn run(args: MaskArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::mask::run(request)?;
-    emit_report(&stats, args.stats.json)?;
+    emit_report(&stats, args.stats.json, args.stats.quiet)?;
     Ok(ExitCode::SUCCESS)
 }

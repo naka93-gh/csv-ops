@@ -69,6 +69,6 @@ pub fn run(args: FlagArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::flag::run(request)?;
-    emit_report(&stats, args.stats.json)?;
+    emit_report(&stats, args.stats.json, args.stats.quiet)?;
     Ok(ExitCode::SUCCESS)
 }

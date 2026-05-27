@@ -73,6 +73,6 @@ pub fn run(args: ExtractArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let stats = crate::commands::extract::run(request)?;
-    emit_report(&stats, args.stats.json)?;
+    emit_report(&stats, args.stats.json, args.stats.quiet)?;
     Ok(ExitCode::SUCCESS)
 }

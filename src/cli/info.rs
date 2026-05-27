@@ -46,6 +46,7 @@ pub fn run(args: InfoArgs) -> Result<ExitCode, Box<dyn Error>> {
     };
 
     let report = crate::commands::info::run(request)?;
-    emit_report(&report, args.json)?;
+    // info は主出力が統計なので --quiet 非対応 (常に false)
+    emit_report(&report, args.json, false)?;
     Ok(ExitCode::SUCCESS)
 }

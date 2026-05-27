@@ -52,10 +52,22 @@ pub struct StatsOutputArgs {
     /// 統計を JSON 形式で出力する (未指定なら text)
     #[arg(long)]
     pub json: bool,
+
+    /// 統計出力を抑制する
+    #[arg(long)]
+    pub quiet: bool,
 }
 
 /// 統計／メタ情報レポートを指定形式でフォーマットし標準出力へ書く
-pub fn emit_report<R: StatsReport>(report: &R, json: bool) -> Result<(), Box<dyn Error>> {
+/// quiet 指定時は何も出さない
+pub fn emit_report<R: StatsReport>(
+    report: &R,
+    json: bool,
+    quiet: bool,
+) -> Result<(), Box<dyn Error>> {
+    if quiet {
+        return Ok(());
+    }
     let body = if json {
         report.to_json()
     } else {

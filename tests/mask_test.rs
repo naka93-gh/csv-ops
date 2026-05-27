@@ -377,3 +377,34 @@ fn requires_columns_or_config() {
         .assert()
         .failure();
 }
+
+/// --quiet 指定で統計出力が完全抑制される (--json と両立可)
+#[test]
+fn quiet_suppresses_stats() {
+    let dir = tempdir().unwrap();
+    let input = dir.path().join("in.csv");
+    let output = dir.path().join("out.csv");
+    std::fs::write(&input, "a,b\n1,2\n").unwrap();
+
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .args(["-c", "a", "--quiet"])
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty());
+
+    // --quiet --json でも抑制が勝つ
+    let output2 = dir.path().join("out2.csv");
+    csv_ops()
+        .args(["mask", "-i"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output2)
+        .args(["-c", "a", "--quiet", "--json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty());
+}
