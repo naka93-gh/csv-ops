@@ -16,8 +16,9 @@ pub mod info;
 pub mod mask;
 pub mod replace;
 pub mod similarity;
+pub mod split;
 
-/// 5 サブコマンド (mask/replace/flag/extract/similarity) で共有する入出力系の引数
+/// 6 サブコマンド (mask/replace/flag/extract/similarity/split) で共有する入出力系の引数
 #[derive(Args, Debug)]
 pub struct CommonIoArgs {
     /// 入力ファイル
@@ -46,7 +47,7 @@ pub struct CommonIoArgs {
     pub dry_run: bool,
 }
 
-/// 統計出力形式の共通引数 (convert を含む 6 サブコマンドで使う)
+/// 統計出力形式の共通引数 (convert を含む 7 サブコマンドで使う)
 #[derive(Args, Debug)]
 pub struct StatsOutputArgs {
     /// 統計を JSON 形式で出力する (未指定なら text)
@@ -117,6 +118,8 @@ pub enum Command {
     Extract(extract::ExtractArgs),
     /// 指定カラムを辞書とベストマッチして列を追加する
     Similarity(similarity::SimilarityArgs),
+    /// 1 列を区切り文字で複数列に分割する
+    Split(split::SplitArgs),
     /// エンコーディングと区切り文字を変換する
     Convert(convert::ConvertArgs),
     /// CSV のエンコーディング・行数などの情報を表示する
@@ -131,6 +134,7 @@ impl Cli {
             Command::Flag(args) => flag::run(args),
             Command::Extract(args) => extract::run(args),
             Command::Similarity(args) => similarity::run(args),
+            Command::Split(args) => split::run(args),
             Command::Convert(args) => convert::run(args),
             Command::Info(args) => info::run(args),
         }

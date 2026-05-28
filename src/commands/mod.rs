@@ -5,3 +5,4 @@ pub mod info;
 pub mod mask;
 pub mod replace;
 pub mod similarity;
+pub mod split;
